@@ -261,7 +261,7 @@ const CustomField = ({ pregunta, control, index }: Props) => {
             control={control}
             name={`respuestas.${Number(pregunta.codigo)}.respuesta`}
             render={({ field: { value, onChange } }) => (
-              <TextInput
+             /* <TextInput
                 className={
                   "py-5 bg-white rounded-md px-3 font-semibold text-lg border" +
                   " border-[#D0D0D0]" +
@@ -273,7 +273,30 @@ const CustomField = ({ pregunta, control, index }: Props) => {
                   const num = text === "" ? null : Number(text);
                   onChange(num);
                 }}
-              />
+              />*/
+                <TextInput
+                    className={
+                        "py-5 bg-white rounded-md px-3 font-semibold text-lg border border-[#D0D0D0]" +
+                        `${pregunta.categoriaPregunta === "I" && "flex-1"}`
+                    }
+                    inputMode="decimal"
+                    value={value !== null && value !== undefined ? value.toString() : ""}
+                    onChangeText={(text) => {
+
+                      onChange(text);
+
+                      // const regex = /^-?\d*\.?\d*$/
+                      //
+                      // if (!regex.test(text)) return
+                      //
+                      //
+                      // if (text === "" || text === "-" || text === "." || text === "-.") {
+                      //   onChange(text)
+                      // } else {
+                      //   onChange(Number(text))
+                      // }
+                    }}
+                />
             )}
           />
         </View>
