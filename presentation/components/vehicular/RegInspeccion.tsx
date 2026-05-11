@@ -1,23 +1,21 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, ActivityIndicator,FlatList } from "react-native";
-import { useVehiculos } from "@/presentation/hooks/useVehiculos";
+import { ListarVehiculos } from "@/core/services/Vehiculos.service";
+import { useScreenOrientation } from "@/hooks/useScreenOrientation";
 import {
   TipoVehiculosPP,
   Vehiculo,
 } from "@/infraestructure/interfaces/main.interface";
-import ListaVehiculos from "@/presentation/components/vehicular/ListaVehiculos";
-import ThemedText from "@/presentation/shared/ThemedText";
 import FormInspeccion from "@/presentation/components/inspeccion/FormInspeccion";
-import { useScreenOrientation } from "@/hooks/useScreenOrientation";
-import { ListarVehiculos } from "@/core/services/Vehiculos.service";
+import ListaVehiculos from "@/presentation/components/vehicular/ListaVehiculos";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, FlatList, View } from "react-native";
 
 interface Props {
-  tipo: "I" | "S"|null;
+  tipo: "I" | "S" | null;
 }
 
 const RegInspeccion = ({ tipo }: Props) => {
   //const { ListVehiculos } = useVehiculos();
-    const [loadingVehiculos, setLoadingVehiculos] = useState<boolean>(false);
+  const [loadingVehiculos, setLoadingVehiculos] = useState<boolean>(false);
 
   const [listVehiculos, setListVehiculos] = useState<TipoVehiculosPP[]>([]);
   // const [listVehiculosT, setListVehiculosT] = useState<Vehiculo[]>([]);
@@ -29,11 +27,11 @@ const RegInspeccion = ({ tipo }: Props) => {
   const seleccionarVehiculo = (vehiculo: Vehiculo) => {
     setSelectedVehiculo(vehiculo);
   };
-    const orientation = useScreenOrientation();
-    const isPortrait = orientation === 'portrait';
-    const numColumns = isPortrait ? 1 : listVehiculos.length;
+  const orientation = useScreenOrientation();
+  const isPortrait = orientation === "portrait";
+  const numColumns = isPortrait ? 1 : listVehiculos.length;
 
- /* useEffect(() => {
+  /* useEffect(() => {
     if (!ListVehiculos.isLoading && ListVehiculos.data) {
       /!*const { T, P } = ListVehiculos.data.reduce(
         (acc: { T: Vehiculo[]; P: Vehiculo[] }, v: Vehiculo) => {
@@ -51,20 +49,19 @@ const RegInspeccion = ({ tipo }: Props) => {
     }
   }, [ListVehiculos.isLoading, ListVehiculos.data]);*/
 
+  useEffect(() => {
+    const listarVehiculosPP = async () => {
+      setLoadingVehiculos(true);
+      const listaVehiculos = await ListarVehiculos();
+      setListVehiculos(listaVehiculos);
+      setLoadingVehiculos(false);
+    };
 
-    useEffect(() => {
-        const listarVehiculosPP= async()=>
-        {
-            setLoadingVehiculos(true);
-            const listaVehiculos = await ListarVehiculos();
-            setListVehiculos(listaVehiculos)
-            setLoadingVehiculos(false);
-        }
+    listarVehiculosPP();
+  }, []);
 
-        listarVehiculosPP()
-    }, []);
-
-  if (loadingVehiculos)//ListVehiculos.isLoading
+  if (loadingVehiculos)
+    //ListVehiculos.isLoading
     return (
       <View className="justify-center items-center flex-1">
         <ActivityIndicator color="gray" size={40} />
@@ -107,36 +104,32 @@ const RegInspeccion = ({ tipo }: Props) => {
         </View>
         */
 
-    <View className={'flex-1'}>
-        <FlatList
-            key={numColumns}
-            numColumns={numColumns}
-            contentContainerStyle={{
-                paddingTop:20
-            }}
-            columnWrapperStyle={numColumns > 1 ? { gap:20} : undefined}
-            data={listVehiculos}
-            keyExtractor={(item) => item.tipoTrans}
-            renderItem={({item})=>(
-                <View key={item.tipoTrans} className="flex-1">
-                    <ListaVehiculos
-                        vehiculos={item.vehiculos}
-                        titulo={item.descTrans}
-                        seleccionarVehiculo={seleccionarVehiculo}
-                        tipoInsp={tipo??''}
-                    />
-                </View>
-            )}
-
-        />
+    <View className={"flex-1"}>
+      <FlatList
+        key={numColumns}
+        numColumns={numColumns}
+        contentContainerStyle={{
+          paddingTop: 20,
+        }}
+        columnWrapperStyle={numColumns > 1 ? { gap: 20 } : undefined}
+        data={listVehiculos}
+        keyExtractor={(item) => item.tipoTrans}
+        renderItem={({ item }) => (
+          <View key={item.tipoTrans} className="flex-grow">
+            <ListaVehiculos
+              vehiculos={item.vehiculos}
+              titulo={item.descTrans}
+              seleccionarVehiculo={seleccionarVehiculo}
+              tipoInsp={tipo ?? ""}
+            />
+          </View>
+        )}
+      />
     </View>
-
-
-
   ) : (
     <View className={"flex-1 p-5"}>
       <FormInspeccion
-        tipoIns={tipo??''}
+        tipoIns={tipo ?? ""}
         tipoUnd={selectedVehiculo.tipoTrans}
         placa={selectedVehiculo.numPlaca}
       />
