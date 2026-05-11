@@ -1,17 +1,16 @@
-import React, { useState } from "react";
-import { View, TextInput, Button, Image, Pressable, Platform } from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import * as FileSystem from "expo-file-system";
-import * as ImageManipulator from "expo-image-manipulator";
-import { Checkbox } from "@futurejj/react-native-checkbox";
+import { CameraIcon, CloseIcon } from "@/constants/Icons";
 import {
-  PreguntaInspeccion,
   FormularioInspeccion,
+  PreguntaInspeccion,
 } from "@/infraestructure/interfaces/main.interface";
 import ThemedText from "@/presentation/shared/ThemedText";
-import { CameraIcon, CloseIcon } from "@/constants/Icons";
+import { Checkbox } from "@futurejj/react-native-checkbox";
+import * as FileSystem from "expo-file-system/legacy";
+import * as ImagePicker from "expo-image-picker";
 import { ImagePickerAsset } from "expo-image-picker";
+import React, { useState } from "react";
 import { Control, Controller } from "react-hook-form";
+import { Image, Platform, Pressable, TextInput, View } from "react-native";
 
 interface Props {
   pregunta: PreguntaInspeccion;
@@ -39,16 +38,17 @@ const CustomField = ({ pregunta, control, index }: Props) => {
     }
   };
 
-    function obtenerExtension(filename: string| null|undefined): string {
-        if(!filename) return ''
-        const partes = filename.split('.');
-        if (partes.length === 1) return ''; // No tiene extensión
-        return partes.pop() || '';
-    }
+  function obtenerExtension(filename: string | null | undefined): string {
+    if (!filename) return "";
+    const partes = filename.split(".");
+    if (partes.length === 1) return ""; // No tiene extensión
+    return partes.pop() || "";
+  }
 
-
-    const takePhoto = async (
-    onChange: (value: { uri: string; mimeType?: string,extension?:string } | null) => void,
+  const takePhoto = async (
+    onChange: (
+      value: { uri: string; mimeType?: string; extension?: string } | null,
+    ) => void,
   ) => {
     // pedir permisos de cámara
     const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -67,13 +67,10 @@ const CustomField = ({ pregunta, control, index }: Props) => {
 
     console.log(result);
 
+    if (!result.canceled) {
+      let uri = result.assets[0].uri;
 
-
-
-        if (!result.canceled) {
-            let uri= result.assets[0].uri
-
-          /*const manipulated = await ImageManipulator.manipulateAsync(
+      /*const manipulated = await ImageManipulator.manipulateAsync(
               result.assets[0].uri,
               [{ resize: { width: 1280 } }],
               {
@@ -86,26 +83,23 @@ const CustomField = ({ pregunta, control, index }: Props) => {
 
           uri = `data:${result.assets[0].mimeType};base64,${manipulated.base64}`;*/
 
-            if (
-                Platform.OS === "android" || Platform.OS === "ios"
-            ) {
-                const base64 = await FileSystem.readAsStringAsync(
-                    result.assets[0].uri,
-                    {
-                        encoding: "base64",
-                    },
-                );
+      if (Platform.OS === "android" || Platform.OS === "ios") {
+        const base64 = await FileSystem.readAsStringAsync(
+          result.assets[0].uri,
+          {
+            encoding: "base64",
+          },
+        );
 
-                uri = `data:${result.assets[0].mimeType};base64,${base64}`;
-            }
+        uri = `data:${result.assets[0].mimeType};base64,${base64}`;
+      }
 
-
-          onChange({
-            uri: uri,
-            mimeType: result.assets[0].mimeType,
-            extension: obtenerExtension(result.assets[0].fileName),
-          });
-        }
+      onChange({
+        uri: uri,
+        mimeType: result.assets[0].mimeType,
+        extension: obtenerExtension(result.assets[0].fileName),
+      });
+    }
   };
 
   const deleteImage = (onChange: (value: null) => void) => {
@@ -130,7 +124,7 @@ const CustomField = ({ pregunta, control, index }: Props) => {
           <PreguntaTitulo />
 
           <Controller
-              control={control}
+            control={control}
             name={`respuestas.${Number(pregunta.codigo)}.codPregunta`}
             defaultValue={pregunta.codigo}
             render={({ field: { value } }) => (
@@ -141,7 +135,6 @@ const CustomField = ({ pregunta, control, index }: Props) => {
           <Controller
             control={control}
             name={`respuestas.${Number(pregunta.codigo)}.respuesta`}
-
             render={({ field: { value, onChange } }) => (
               <TextInput
                 className={
@@ -149,8 +142,7 @@ const CustomField = ({ pregunta, control, index }: Props) => {
                   " border-[#D0D0D0] " +
                   `${pregunta.categoriaPregunta === "I" && "flex-1"}`
                 }
-                value={typeof value === 'string' ? value.toString() : ''}
-
+                value={typeof value === "string" ? value.toString() : ""}
                 onChangeText={onChange}
               />
             )}
@@ -164,7 +156,7 @@ const CustomField = ({ pregunta, control, index }: Props) => {
         >
           <PreguntaTitulo />
           <Controller
-              control={control}
+            control={control}
             name={`respuestas.${Number(pregunta.codigo)}.codPregunta`}
             defaultValue={pregunta.codigo}
             render={({ field: { value } }) => (
@@ -196,7 +188,7 @@ const CustomField = ({ pregunta, control, index }: Props) => {
         >
           <PreguntaTitulo />
           <Controller
-              control={control}
+            control={control}
             name={`respuestas.${Number(pregunta.codigo)}.codPregunta`}
             defaultValue={pregunta.codigo}
             render={({ field: { value } }) => (
@@ -250,7 +242,7 @@ const CustomField = ({ pregunta, control, index }: Props) => {
         >
           <PreguntaTitulo />
           <Controller
-              control={control}
+            control={control}
             name={`respuestas.${Number(pregunta.codigo)}.codPregunta`}
             defaultValue={pregunta.codigo}
             render={({ field: { value } }) => (
@@ -261,7 +253,7 @@ const CustomField = ({ pregunta, control, index }: Props) => {
             control={control}
             name={`respuestas.${Number(pregunta.codigo)}.respuesta`}
             render={({ field: { value, onChange } }) => (
-             /* <TextInput
+              /* <TextInput
                 className={
                   "py-5 bg-white rounded-md px-3 font-semibold text-lg border" +
                   " border-[#D0D0D0]" +
@@ -274,29 +266,30 @@ const CustomField = ({ pregunta, control, index }: Props) => {
                   onChange(num);
                 }}
               />*/
-                <TextInput
-                    className={
-                        "py-5 bg-white rounded-md px-3 font-semibold text-lg border border-[#D0D0D0]" +
-                        `${pregunta.categoriaPregunta === "I" && "flex-1"}`
-                    }
-                    inputMode="decimal"
-                    value={value !== null && value !== undefined ? value.toString() : ""}
-                    onChangeText={(text) => {
+              <TextInput
+                className={
+                  "py-5 bg-white rounded-md px-3 font-semibold text-lg border border-[#D0D0D0]" +
+                  `${pregunta.categoriaPregunta === "I" && "flex-1"}`
+                }
+                inputMode="decimal"
+                value={
+                  value !== null && value !== undefined ? value.toString() : ""
+                }
+                onChangeText={(text) => {
+                  onChange(text);
 
-                      onChange(text);
-
-                      // const regex = /^-?\d*\.?\d*$/
-                      //
-                      // if (!regex.test(text)) return
-                      //
-                      //
-                      // if (text === "" || text === "-" || text === "." || text === "-.") {
-                      //   onChange(text)
-                      // } else {
-                      //   onChange(Number(text))
-                      // }
-                    }}
-                />
+                  // const regex = /^-?\d*\.?\d*$/
+                  //
+                  // if (!regex.test(text)) return
+                  //
+                  //
+                  // if (text === "" || text === "-" || text === "." || text === "-.") {
+                  //   onChange(text)
+                  // } else {
+                  //   onChange(Number(text))
+                  // }
+                }}
+              />
             )}
           />
         </View>
