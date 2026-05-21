@@ -5,12 +5,13 @@ import {
 } from "@/infraestructure/interfaces/main.interface";
 import ThemedText from "@/presentation/shared/ThemedText";
 import { Checkbox } from "@futurejj/react-native-checkbox";
+import { CameraView, useCameraPermissions } from "expo-camera";
 import * as FileSystem from "expo-file-system/legacy";
 import * as ImagePicker from "expo-image-picker";
 import { ImagePickerAsset } from "expo-image-picker";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Control, Controller } from "react-hook-form";
-import { Image, Platform, Pressable, TextInput, View } from "react-native";
+import { Image, Modal, Platform, Pressable, TextInput, View } from "react-native";
 
 interface Props {
   pregunta: PreguntaInspeccion;
@@ -21,6 +22,11 @@ interface Props {
 const CustomField = ({ pregunta, control, index }: Props) => {
   /* EN CASO SEA BOTON BOOLEAN */
   const [image, setImage] = useState<ImagePickerAsset | null>(null);
+  const cameraRef = useRef<CameraView | null>(null);
+  const [permission, requestPermission] = useCameraPermissions();
+const [cameraVisible, setCameraVisible] = useState(false);
+const [takingPhoto, setTakingPhoto] = useState(false);
+const [cameraReady, setCameraReady] = useState(false);
 
   const pickImage = async () => {
     // No permissions request is necessary for launching the image library
@@ -46,61 +52,169 @@ const CustomField = ({ pregunta, control, index }: Props) => {
   }
 
   const takePhoto = async (
-    onChange: (
-      value: { uri: string; mimeType?: string; extension?: string } | null,
-    ) => void,
-  ) => {
-    // pedir permisos de cámara
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
-      alert("Se requiere permiso para usar la cámara.");
-      return;
+  onChange: (
+    value: { uri: string; mimeType?: string; extension?: string } | null,
+  ) => void,
+) => {
+
+  try {
+
+    if (takingPhoto) return;
+
+    setTakingPhoto(true);
+
+    // permisos
+    if (!permission?.granted) {
+
+      const response = await requestPermission();
+
+      if (!response.granted) {
+
+        alert("Se requiere permiso para usar la cámara.");
+
+        return;
+      }
     }
 
     // abrir cámara
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ["images", "videos"],
+    setCameraVisible(true);
+
+  } catch (error) {
+
+    console.log(error);
+
+    alert("No se pudo abrir la cámara.");
+
+  } finally {
+
+    setTakingPhoto(false);
+
+  }
+};
+
+const capturePhoto = async (
+  onChange: (
+    value: { uri: string; mimeType?: string; extension?: string } | null,
+  ) => void,
+) => {
+
+  try {
+
+    if (!cameraRef.current) return;
+
+    const result = await cameraRef.current.takePictureAsync({
       quality: 0.7,
-      // quality: 1,
-      allowsEditing: false,
+      base64: false,
+      skipProcessing: true,
     });
 
     console.log(result);
 
-    if (!result.canceled) {
-      let uri = result.assets[0].uri;
+    let uri = result.uri;
 
-      /*const manipulated = await ImageManipulator.manipulateAsync(
-              result.assets[0].uri,
-              [{ resize: { width: 1280 } }],
-              {
-                compress: 0.6,
-                format: ImageManipulator.SaveFormat.PNG,
-                base64: true,
-              },
-          );
+    // convertir a base64 SOLO si realmente lo necesitas
+    if (Platform.OS === "android" || Platform.OS === "ios") {
 
+      const base64 = await FileSystem.readAsStringAsync(
+        result.uri,
+        {
+          encoding: "base64",
+        },
+      );
 
-          uri = `data:${result.assets[0].mimeType};base64,${manipulated.base64}`;*/
-
-      if (Platform.OS === "android" || Platform.OS === "ios") {
-        const base64 = await FileSystem.readAsStringAsync(
-          result.assets[0].uri,
-          {
-            encoding: "base64",
-          },
-        );
-
-        uri = `data:${result.assets[0].mimeType};base64,${base64}`;
-      }
-
-      onChange({
-        uri: uri,
-        mimeType: result.assets[0].mimeType,
-        extension: obtenerExtension(result.assets[0].fileName),
-      });
+      uri = `data:image/jpeg;base64,${base64}`;
     }
-  };
+
+    onChange({
+      uri,
+      mimeType: "image/jpeg",
+      extension: "jpg",
+    });
+
+    // cerrar cámara
+    setCameraVisible(false);
+
+  } catch (error: any) {
+
+    console.log("ERROR CAMARA:", error);
+
+    const message = error?.message?.toLowerCase?.() || "";
+
+    if (
+      message.includes("camera") ||
+      message.includes("busy") ||
+      message.includes("cannot")
+    ) {
+
+      alert(
+        "La cámara está siendo usada por otra aplicación."
+      );
+
+    } else {
+
+      alert("No se pudo tomar la foto.");
+
+    }
+
+  }
+};
+
+  // const takePhoto = async (
+  //   onChange: (
+  //     value: { uri: string; mimeType?: string; extension?: string } | null,
+  //   ) => void,
+  // ) => {
+  //   // pedir permisos de cámara
+  //   const permission = await ImagePicker.requestCameraPermissionsAsync();
+  //   if (!permission.granted) {
+  //     alert("Se requiere permiso para usar la cámara.");
+  //     return;
+  //   }
+
+  //   // abrir cámara
+  //   const result = await ImagePicker.launchCameraAsync({
+  //     mediaTypes: ["images", "videos"],
+  //     quality: 0.7,
+  //     // quality: 1,
+  //     allowsEditing: false,
+  //   });
+
+  //   console.log(result);
+
+  //   if (!result.canceled) {
+  //     let uri = result.assets[0].uri;
+
+  //     /*const manipulated = await ImageManipulator.manipulateAsync(
+  //             result.assets[0].uri,
+  //             [{ resize: { width: 1280 } }],
+  //             {
+  //               compress: 0.6,
+  //               format: ImageManipulator.SaveFormat.PNG,
+  //               base64: true,
+  //             },
+  //         );
+
+
+  //         uri = `data:${result.assets[0].mimeType};base64,${manipulated.base64}`;*/
+
+  //     if (Platform.OS === "android" || Platform.OS === "ios") {
+  //       const base64 = await FileSystem.readAsStringAsync(
+  //         result.assets[0].uri,
+  //         {
+  //           encoding: "base64",
+  //         },
+  //       );
+
+  //       uri = `data:${result.assets[0].mimeType};base64,${base64}`;
+  //     }
+
+  //     onChange({
+  //       uri: uri,
+  //       mimeType: result.assets[0].mimeType,
+  //       extension: obtenerExtension(result.assets[0].fileName),
+  //     });
+  //   }
+  // };
 
   const deleteImage = (onChange: (value: null) => void) => {
     onChange(null);
@@ -181,60 +295,204 @@ const CustomField = ({ pregunta, control, index }: Props) => {
           </View>
         </View>
       );
+    // case "B":
+    //   return (
+    //     <View
+    //       className={`${pregunta.categoriaPregunta === "I" && "flex-row items-center border-b border-gray-300"} gap-3  py-4`}
+    //     >
+    //       <PreguntaTitulo />
+    //       <Controller
+    //         control={control}
+    //         name={`respuestas.${Number(pregunta.codigo)}.codPregunta`}
+    //         defaultValue={pregunta.codigo}
+    //         render={({ field: { value } }) => (
+    //           <TextInput className={"hidden"} value={value} />
+    //         )}
+    //       />
+    //       <Controller
+    //         control={control}
+    //         name={`respuestas.${Number(pregunta.codigo)}.respuesta`}
+    //         render={({ field: { value, onChange } }) =>
+    //           value &&
+    //           typeof value === "object" &&
+    //           "mimeType" in value &&
+    //           value.mimeType?.includes("image") ? (
+    //             <View
+    //               className={`${pregunta.categoriaPregunta === "I" && "flex-1"} flex-row items-center gap-x-5`}
+    //             >
+    //               <Image
+    //                 source={{ uri: value.uri }}
+    //                 style={{ width: 100, height: 100 }}
+    //               />
+    //               <Pressable
+    //                 onPress={() => deleteImage(onChange)}
+    //                 className={
+    //                   "bg-light-danger dark:bg-dark-danger p-2 rounded-lg justify-center items-center  " +
+    //                   `${pregunta.categoriaPregunta === "I" && "w-auto"}`
+    //                 }
+    //               >
+    //                 <CloseIcon />
+    //               </Pressable>
+    //             </View>
+    //           ) : (
+    //             <Pressable
+    //               onPress={() => takePhoto(onChange)}
+    //               className={
+    //                 "bg-light-primary dark:bg-dark-primary p-2 rounded-lg justify-center items-center " +
+    //                 `${pregunta.categoriaPregunta === "I" && "flex-1"}`
+    //               }
+    //             >
+    //               <CameraIcon />
+    //             </Pressable>
+    //           )
+    //         }
+    //       />
+    //     </View>
+    //   );
     case "B":
-      return (
-        <View
-          className={`${pregunta.categoriaPregunta === "I" && "flex-row items-center border-b border-gray-300"} gap-3  py-4`}
-        >
-          <PreguntaTitulo />
-          <Controller
-            control={control}
-            name={`respuestas.${Number(pregunta.codigo)}.codPregunta`}
-            defaultValue={pregunta.codigo}
-            render={({ field: { value } }) => (
-              <TextInput className={"hidden"} value={value} />
-            )}
-          />
-          <Controller
-            control={control}
-            name={`respuestas.${Number(pregunta.codigo)}.respuesta`}
-            render={({ field: { value, onChange } }) =>
-              value &&
-              typeof value === "object" &&
-              "mimeType" in value &&
-              value.mimeType?.includes("image") ? (
-                <View
-                  className={`${pregunta.categoriaPregunta === "I" && "flex-1"} flex-row items-center gap-x-5`}
-                >
-                  <Image
-                    source={{ uri: value.uri }}
-                    style={{ width: 100, height: 100 }}
-                  />
-                  <Pressable
-                    onPress={() => deleteImage(onChange)}
-                    className={
-                      "bg-light-danger dark:bg-dark-danger p-2 rounded-lg justify-center items-center  " +
-                      `${pregunta.categoriaPregunta === "I" && "w-auto"}`
-                    }
-                  >
-                    <CloseIcon />
-                  </Pressable>
-                </View>
-              ) : (
+  return (
+    <View className="relative">
+     {/* MODAL CAMARA */}
+     <Modal
+  visible={cameraVisible}
+  animationType="slide"
+  presentationStyle="fullScreen"
+  statusBarTranslucent
+>
+
+  <View
+    style={{
+      flex: 1,
+      backgroundColor: "black",
+    }}
+  >
+
+    <CameraView
+  ref={cameraRef}
+  style={{
+    flex: 1,
+  }}
+  facing="back"
+  autofocus="on"
+  animateShutter
+  onCameraReady={() => {
+    setCameraReady(true);
+  }}
+/>
+
+    {/* BOTONES */}
+    <View
+      style={{
+        position: "absolute",
+        bottom: 40,
+        width: "100%",
+        flexDirection: "row",
+        justifyContent: "space-around",
+        alignItems: "center",
+      }}
+    >
+
+      {/* CERRAR */}
+      <Pressable
+        onPress={() => setCameraVisible(false)}
+        style={{
+          backgroundColor: "red",
+          padding: 18,
+          borderRadius: 100,
+        }}
+      >
+        <CloseIcon />
+      </Pressable>
+
+      {/* TOMAR FOTO */}
+      <Controller
+        control={control}
+        name={`respuestas.${Number(pregunta.codigo)}.respuesta`}
+        render={({ field: { onChange } }) => (
+
+          <Pressable
+  disabled={!cameraReady}
+  onPress={() => capturePhoto(onChange)}
+  style={{
+    backgroundColor: "white",
+    width: 80,
+    height: 80,
+    borderRadius: 100,
+    opacity: cameraReady ? 1 : 0.5,
+  }}
+/>
+
+        )}
+      />
+
+    </View>
+
+  </View>
+
+</Modal>
+      <View
+        className={`${pregunta.categoriaPregunta === "I" && "flex-row items-center border-b border-gray-300"} gap-3 py-4`}
+      >
+        <PreguntaTitulo />
+
+        <Controller
+          control={control}
+          name={`respuestas.${Number(pregunta.codigo)}.codPregunta`}
+          defaultValue={pregunta.codigo}
+          render={({ field: { value } }) => (
+            <TextInput className={"hidden"} value={value} />
+          )}
+        />
+
+        <Controller
+          control={control}
+          name={`respuestas.${Number(pregunta.codigo)}.respuesta`}
+          render={({ field: { value, onChange } }) =>
+            value &&
+            typeof value === "object" &&
+            "mimeType" in value &&
+            value.mimeType?.includes("image") ? (
+
+              <View
+                className={`${pregunta.categoriaPregunta === "I" && "flex-1"} flex-row items-center gap-x-5`}
+              >
+                <Image
+                  source={{ uri: value.uri }}
+                  style={{ width: 100, height: 100 }}
+                />
+
                 <Pressable
-                  onPress={() => takePhoto(onChange)}
+                  onPress={() => deleteImage(onChange)}
                   className={
-                    "bg-light-primary dark:bg-dark-primary p-2 rounded-lg justify-center items-center " +
-                    `${pregunta.categoriaPregunta === "I" && "flex-1"}`
+                    "bg-light-danger dark:bg-dark-danger p-2 rounded-lg justify-center items-center " +
+                    `${pregunta.categoriaPregunta === "I" && "w-auto"}`
                   }
                 >
-                  <CameraIcon />
+                  <CloseIcon />
                 </Pressable>
-              )
-            }
-          />
-        </View>
-      );
+
+              </View>
+
+            ) : (
+
+              <Pressable
+                onPress={() => takePhoto(onChange)}
+                className={
+                  "bg-light-primary dark:bg-dark-primary p-2 rounded-lg justify-center items-center " +
+                  `${pregunta.categoriaPregunta === "I" && "flex-1"}`
+                }
+              >
+                <CameraIcon />
+              </Pressable>
+
+            )
+          }
+        />
+      </View>
+
+     
+    </View>
+  );
     case "N":
       return (
         <View
