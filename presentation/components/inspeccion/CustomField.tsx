@@ -9,9 +9,9 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import * as FileSystem from "expo-file-system/legacy";
 import * as ImagePicker from "expo-image-picker";
 import { ImagePickerAsset } from "expo-image-picker";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Control, Controller } from "react-hook-form";
-import { Image, Modal, Platform, Pressable, TextInput, View } from "react-native";
+import { Alert, Image, Modal, Platform, Pressable, TextInput, View } from "react-native";
 
 interface Props {
   pregunta: PreguntaInspeccion;
@@ -132,11 +132,21 @@ const capturePhoto = async (
     });
 
     // cerrar cámara
-    setCameraVisible(false);
+      setCameraReady(false);
+
+      setTimeout(() => {
+        setCameraVisible(false);
+      }, 100);
 
   } catch (error: any) {
 
     console.log("ERROR CAMARA:", error);
+
+    setCameraReady(false);
+
+      setTimeout(() => {
+        setCameraVisible(false);
+      }, 100);
 
     const message = error?.message?.toLowerCase?.() || "";
 
@@ -146,13 +156,13 @@ const capturePhoto = async (
       message.includes("cannot")
     ) {
 
-      alert(
+      Alert.alert(
         "La cámara está siendo usada por otra aplicación."
       );
 
     } else {
 
-      alert("No se pudo tomar la foto.");
+      Alert.alert("No se pudo tomar la foto.");
 
     }
 
@@ -228,6 +238,17 @@ const capturePhoto = async (
       {pregunta.descripcion}
     </ThemedText>
   );
+
+useEffect(() => {
+
+  return () => {
+
+    setCameraReady(false);
+    setCameraVisible(false);
+
+  };
+
+}, []);
 
   switch (pregunta.tipoCampo) {
     case "V":
@@ -353,12 +374,23 @@ const capturePhoto = async (
   return (
     <View className="relative">
      {/* MODAL CAMARA */}
-     <Modal
-  visible={cameraVisible}
-  animationType="slide"
-  presentationStyle="fullScreen"
-  statusBarTranslucent
->
+   <Modal
+            visible={cameraVisible}
+            transparent={false}
+            animationType="none"
+            presentationStyle="fullScreen"
+            statusBarTranslucent={false}
+            hardwareAccelerated
+            onRequestClose={() => {
+
+              setCameraReady(false);
+
+              setTimeout(() => {
+                setCameraVisible(false);
+              }, 100);
+
+            }}
+          >
 
   <View
     style={{
@@ -394,7 +426,10 @@ const capturePhoto = async (
 
       {/* CERRAR */}
       <Pressable
-        onPress={() => setCameraVisible(false)}
+        onPress={() => {setCameraVisible(false)
+            setCameraReady(false);
+    
+        }}
         style={{
           backgroundColor: "red",
           padding: 18,
