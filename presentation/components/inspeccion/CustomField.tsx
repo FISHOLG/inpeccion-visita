@@ -111,6 +111,7 @@ const capturePhoto = async (
     console.log(result);
 
     let uri = result.uri;
+    
 
     // convertir a base64 SOLO si realmente lo necesitas
     if (Platform.OS === "android" || Platform.OS === "ios") {
