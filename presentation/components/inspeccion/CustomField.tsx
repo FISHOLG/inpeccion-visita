@@ -4,6 +4,7 @@ import {
   PreguntaInspeccion,
 } from "@/infraestructure/interfaces/main.interface";
 import ThemedText from "@/presentation/shared/ThemedText";
+import { ConfirmDialog } from "@/presentation/utils";
 import { Checkbox } from "@futurejj/react-native-checkbox";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as FileSystem from "expo-file-system/legacy";
@@ -228,7 +229,14 @@ const capturePhoto = async (
   // };
 
   const deleteImage = (onChange: (value: null) => void) => {
-    onChange(null);
+
+     ConfirmDialog(
+      "Eliminar imagen",
+      "¿Estás seguro de que quieres eliminar la imagen?",
+      () => {
+        onChange(null);
+      }
+    );
   };
 
   const PreguntaTitulo = () => (
@@ -489,15 +497,16 @@ useEffect(() => {
             "mimeType" in value &&
             value.mimeType?.includes("image") ? (
 
-              <View
+              <Pressable
+              onPress={() => deleteImage(onChange)}
                 className={`${pregunta.categoriaPregunta === "I" && "flex-1"} flex-row items-center gap-x-5`}
               >
                 <Image
                   source={{ uri: value.uri }}
-                  style={{ width: 100, height: 100 }}
+                  style={{ width: 180, height: 120 }}
                 />
 
-                <Pressable
+                {/* <Pressable
                   onPress={() => deleteImage(onChange)}
                   className={
                     "bg-light-danger dark:bg-dark-danger p-2 rounded-lg justify-center items-center " +
@@ -505,9 +514,9 @@ useEffect(() => {
                   }
                 >
                   <CloseIcon />
-                </Pressable>
+                </Pressable> */}
 
-              </View>
+              </Pressable>
 
             ) : (
 
