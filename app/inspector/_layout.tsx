@@ -1,9 +1,9 @@
-import React from "react";
-import { Stack, useNavigation, useRouter } from "expo-router";
+import { ArrowLeftIcon } from "@/constants/Icons";
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { ArrowLeftIcon } from "@/constants/Icons";
 import UserNavbar from "@/presentation/components/menu/UserNavbar";
+import { Stack, useNavigation, useRouter } from "expo-router";
+import React from "react";
 
 const InspectorLayout = () => {
     const colorScheme = useColorScheme();
@@ -20,9 +20,7 @@ const InspectorLayout = () => {
   return (
     <Stack
       screenOptions={{
-        headerStyle: {
-          backgroundColor: navColor,
-        },
+        headerStyle: { backgroundColor: navColor },
         headerTitleStyle: {
           //textTransform: "uppercase",
           fontWeight: "bold",

@@ -1,9 +1,9 @@
-import React from "react";
-import { View, Pressable } from "react-native";
-import ThemedText from "@/presentation/shared/ThemedText";
-import { useAuthContext } from "@/core/stores/AuthContext.store";
 import { LogoutIcon } from "@/constants/Icons";
+import { useAuthContext } from "@/core/stores/AuthContext.store";
+import ThemedText from "@/presentation/shared/ThemedText";
 import { router } from "expo-router";
+import React from "react";
+import { Pressable, View } from "react-native";
 
 const UserNavbar = () => {
   const { auth, logOut } = useAuthContext();

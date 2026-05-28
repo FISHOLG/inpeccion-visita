@@ -1,9 +1,9 @@
-import React from "react";
-import ThemedView from "@/presentation/shared/ThemedView";
 import ListPendientes from "@/presentation/components/visita/ListPendientes";
+import ThemedView from "@/presentation/shared/ThemedView";
+import React from "react";
 const visita = () => {
   return (
-      <ThemedView safeb>
+      <ThemedView safeb >
       <ListPendientes/>
     </ThemedView>
   );

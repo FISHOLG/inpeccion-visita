@@ -1,10 +1,10 @@
-import React from "react";
-import { Text, View } from "react-native";
-import ThemedView from "@/presentation/shared/ThemedView";
-import ButtonOption from "@/presentation/components/menu/ButtonOption";
+import { Colors } from "@/constants/Colors";
 import { BookSearchIcon, CarLeftIcon, CarRightIcon } from "@/constants/Icons";
 import { useColorScheme } from "@/hooks/useColorScheme";
-import { Colors } from "@/constants/Colors";
+import ButtonOption from "@/presentation/components/menu/ButtonOption";
+import ThemedView from "@/presentation/shared/ThemedView";
+import React from "react";
+import { View } from "react-native";
 
 const index = () => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -30,7 +30,7 @@ const index = () => {
     },
   ];
   return (
-    <ThemedView className={" items-center gap-y-2 lg:gap-y-5"}>
+    <ThemedView className={" items-center gap-y-2 lg:gap-y-5"} >
       {opciones.map((opcion, index) => (
         <View key={index} className={"w-3/4 pt-5 lg:pt-10"}>
           <ButtonOption
