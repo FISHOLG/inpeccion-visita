@@ -104,7 +104,7 @@ const RegInspeccion = ({ tipo }: Props) => {
         </View>
         */
 
-    <View className={"flex-1"}>
+    <View className={"flex-1 px-2"}>
       <FlatList
         key={numColumns}
         numColumns={numColumns}

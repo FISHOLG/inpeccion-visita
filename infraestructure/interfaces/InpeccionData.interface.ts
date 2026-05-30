@@ -4,6 +4,7 @@ export interface DataInspeccionResponse {
   TIPO_CAMPO: string;
   FLAG_INSP_UNID: string;
   FLAG_TIPO_INSP: string;
+  FLAG_OBLIGATORIO: string;
 }
 
 export interface InspeccionResponse {

@@ -17,7 +17,13 @@ export const LogoutIcon = (props: IconProps) => (
 );
 
 export const SpinnerIcon = (props: IconProps) => (
-  <MaterialCommunityIcons name="loading" size={24} color="white" spin  {...props}  />
+  <MaterialCommunityIcons
+    name="loading"
+    size={24}
+    color="white"
+    spin
+    {...props}
+  />
 );
 
 export const UserIcon = (props: IconProps) => (
@@ -120,4 +126,13 @@ export const ArrowRightBoldIcon = (props: IconProps) => (
 
 export const CameraIcon = (props: IconProps) => (
   <MaterialCommunityIcons name="camera" size={24} color="white" {...props} />
+);
+
+export const ExclamationIcon = (props: IconProps) => (
+  <MaterialCommunityIcons
+    name="exclamation-thick"
+    size={24}
+    color="white"
+    {...props}
+  />
 );

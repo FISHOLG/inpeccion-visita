@@ -1,12 +1,12 @@
 import { ArrowLeftIcon } from "@/constants/Icons";
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { useColorScheme } from "@/hooks/useColorScheme";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import UserNavbar from "@/presentation/components/menu/UserNavbar";
 import { Stack, useNavigation, useRouter } from "expo-router";
 import React from "react";
 
 const InspectorLayout = () => {
-    const colorScheme = useColorScheme();
+  const colorScheme = useColorScheme();
   const navColor = useThemeColor({}, "navbar");
 
   const navigation = useNavigation();
@@ -56,14 +56,14 @@ const InspectorLayout = () => {
         name={"vehicular/vehicularI"}
         options={{
           // headerShown: false
-          title: "Registrar Ingreso Vehicular",
+          title: "Ingreso Vehicular",
         }}
       />
       <Stack.Screen
         name={"vehicular/vehicularS"}
         options={{
           // headerShown: false
-          title: "Registrar Salida Vehicular",
+          title: "Salida Vehicular",
         }}
       />
     </Stack>

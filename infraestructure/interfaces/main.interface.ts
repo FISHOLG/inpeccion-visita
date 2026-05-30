@@ -11,11 +11,10 @@ export interface Auth {
   perfil: string;
 }
 
-export interface TipoVehiculosPP
-{
-    tipoTrans: string;
-    descTrans:string
-    vehiculos:Vehiculo[]
+export interface TipoVehiculosPP {
+  tipoTrans: string;
+  descTrans: string;
+  vehiculos: Vehiculo[];
 }
 
 export interface Vehiculo {
@@ -25,29 +24,26 @@ export interface Vehiculo {
   tipoUltInsp: string;
 }
 
-
-
 export interface PreguntaInspeccion {
   codigo: string;
   descripcion: string;
   tipoCampo: TipoCampoType;
   categoriaPregunta: CategPreguntaType;
   tipoPregunta: TipoPreguntaType;
+  obligatorio: boolean;
 }
 
 // Interfaces de React-Hook-Form
 export interface FormularioInspeccion {
-    respuestas: DetalleFormInspeccion[];
+  respuestas: DetalleFormInspeccion[];
 }
 
 export interface DetalleFormInspeccion {
-
-    codPregunta: string;
-    respuesta: RespInspeccionType;
-    observacion?: string;
+  codPregunta: string;
+  respuesta: RespInspeccionType;
+  observacion?: string;
 }
 //////////////////////////////////////////////
-
 
 // Datos Enviados a base de datos
 export interface FormInspecc {
@@ -64,16 +60,14 @@ export interface DetalleInspeccion extends DetalleFormInspeccion {
 }
 //////////////////////////////////////////
 
-export interface VehiculosVisita
-{
-    codIngreso: string;
-    itemIngreso: string;
-    rucTransp: string;
-    placa1:string;
-    placa2: string;
-    codUnd:string;
-    fechaIngreso:string;
-    modelo:string;
-    tipoInspeccion:string;
+export interface VehiculosVisita {
+  codIngreso: string;
+  itemIngreso: string;
+  rucTransp: string;
+  placa1: string;
+  placa2: string;
+  codUnd: string;
+  fechaIngreso: string;
+  modelo: string;
+  tipoInspeccion: string;
 }
-

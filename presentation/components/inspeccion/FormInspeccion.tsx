@@ -1,27 +1,27 @@
-import React, { useEffect, useState } from "react";
-import { View, ActivityIndicator, Pressable, FlatList } from "react-native";
-import { useForm } from "react-hook-form";
 import {
   ArrowLeftBoldIcon,
   ArrowRightBoldIcon,
   SaveIcon,
   SpinnerIcon,
 } from "@/constants/Icons";
+import { guardarInspeccion } from "@/core/services/Inspeccion.service";
+import { useAuthContext } from "@/core/stores/AuthContext.store";
 import {
-  PreguntaInspeccion,
-  FormularioInspeccion,
   DetalleInspeccion,
-    FormInspecc,
+  FormInspecc,
+  FormularioInspeccion,
+  PreguntaInspeccion,
 } from "@/infraestructure/interfaces/main.interface";
+import CustomField from "@/presentation/components/inspeccion/CustomField";
 import { useDataInspeccion } from "@/presentation/hooks/useDataInspeccion";
 import ThemedText from "@/presentation/shared/ThemedText";
 import ThemedView from "@/presentation/shared/ThemedView";
-import CustomField from "@/presentation/components/inspeccion/CustomField";
-import { useAuthContext } from "@/core/stores/AuthContext.store";
-import { guardarInspeccion } from "@/core/services/Inspeccion.service";
 import { ConfirmDialog } from "@/presentation/utils";
-import { Toast } from "toastify-react-native";
 import { router } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { FieldPath, useForm } from "react-hook-form";
+import { ActivityIndicator, FlatList, Pressable, View } from "react-native";
+import { Toast } from "toastify-react-native";
 
 interface Props {
   tipoIns: string;
@@ -38,7 +38,6 @@ const FormInspeccion = ({
   codInsp,
   itemInsp,
 }: Props) => {
-
   const { auth } = useAuthContext();
 
   const { ListPreguntas } = useDataInspeccion(tipoUnd);
@@ -54,10 +53,21 @@ const FormInspeccion = ({
   const {
     control,
     handleSubmit,
+    trigger,
     formState: { errors },
   } = useForm<FormularioInspeccion>();
 
-  const nextPage = () => {
+  const nextPage = async () => {
+    const camposPaso1 = preguntasU.map(
+      (p) => `respuestas.${Number(p.codigo)}.respuesta`,
+    ) as FieldPath<FormularioInspeccion>[];
+
+    const valid = await trigger(camposPaso1);
+    if (!valid) {
+      Toast.warn("complete los campos obligatorios");
+      return;
+    }
+
     setStepPage((prev) => prev + 1);
   };
 
@@ -65,60 +75,74 @@ const FormInspeccion = ({
     setStepPage((prev) => prev - 1);
   };
 
-  const saveInspeccion = async (datosSave:FormInspecc) => {
-      setIsSaving(true)
+  const saveInspeccion = async (datosSave: FormInspecc) => {
+    setIsSaving(true);
 
-    const peticion = await guardarInspeccion(datosSave);
+    try {
+      const peticion = await guardarInspeccion(datosSave);
 
-      if(peticion.error)
-      {
-          setIsSaving(false)
-          Toast.error(peticion.error);
-          return;
+      if (peticion.error) {
+        setIsSaving(false);
+        Toast.error(peticion.error);
+        return;
       }
 
-
-      if(!peticion.success)
-      {
-          setIsSaving(false)
-          Toast.error('Error Desconocido');
-          return;
-
+      if (!peticion.success) {
+        setIsSaving(false);
+        Toast.error("Error Desconocido");
+        return;
       }
 
-      Toast.success('Registro Exitoso');
-      setIsSaving(false)
-      router.replace('/')
+      Toast.success("Registro Exitoso");
+      setIsSaving(false);
+      router.replace("/");
+    } catch (error) {
+      console.log("Error al guardar inspeccion:", error);
+      Toast.error("Error al guardar inspeccion");
+      setIsSaving(false);
+    }
   };
 
+  const enviarFormulario = async (data: FormularioInspeccion) => {
+    const camposPaso2 = preguntasI.map(
+      (p) => `respuestas.${Number(p.codigo)}.respuesta`,
+    ) as FieldPath<FormularioInspeccion>[];
 
-  const enviarFormulario=(data: FormularioInspeccion)=>
-  {
-      const respuestas = data.respuestas;
+    const valid = await trigger(camposPaso2);
+    if (!valid) {
+      Toast.warn("complete los campos obligatorios");
+      return;
+    }
 
-      const nuevasRespuestas: DetalleInspeccion[] = respuestas.reduce<DetalleInspeccion[]>(
-          (acc, item) => {
-              if (item !== undefined) {
-                  acc.push({ ...item, codUnd: tipoUnd });
-              }
-              return acc;
-          },
-          []
-      );
+    const respuestas = data.respuestas;
 
-      //console.log(nuevasRespuestas);
+    const nuevasRespuestas: DetalleInspeccion[] = respuestas.reduce<
+      DetalleInspeccion[]
+    >((acc, item) => {
+      if (item !== undefined) {
+        acc.push({ ...item, codUnd: tipoUnd });
+      }
+      return acc;
+    }, []);
 
-      const datosSave: FormInspecc = {
-          usuario: auth?.codUsr ?? "",
-          respuestas: nuevasRespuestas,
-          tipoInspeccion: tipoIns,
-          numPlaca: placa,
-          itemIngreso: itemInsp,
-          codIngreso: codInsp,
-      };
+    //console.log(nuevasRespuestas);
 
-      ConfirmDialog('¿GUARDAR INSPECCION?','Revise los datos antes de confirmar',async()=>saveInspeccion(datosSave),()=>console.log('CANCELADO'));
-  }
+    const datosSave: FormInspecc = {
+      usuario: auth?.codUsr ?? "",
+      respuestas: nuevasRespuestas,
+      tipoInspeccion: tipoIns,
+      numPlaca: placa,
+      itemIngreso: itemInsp,
+      codIngreso: codInsp,
+    };
+
+    ConfirmDialog(
+      "¿GUARDAR INSPECCION?",
+      "Revise los datos antes de confirmar",
+      async () => saveInspeccion(datosSave),
+      () => console.log("CANCELADO"),
+    );
+  };
 
   useEffect(() => {
     if (!ListPreguntas.isLoading && ListPreguntas.data) {
@@ -154,7 +178,7 @@ const FormInspeccion = ({
     console.log(errors);
   }, [errors]);*/
 
-    /*useEffect(() => {
+  /*useEffect(() => {
         console.log('exito')
         Toast.success(' Exitoso');
     }, []);*/
@@ -181,8 +205,13 @@ const FormInspeccion = ({
           <FlatList
             data={preguntasU}
             keyExtractor={(item) => item.codigo}
-            renderItem={({ item,index }) => (
-              <CustomField pregunta={item} control={control} index={index}/>
+            renderItem={({ item, index }) => (
+              <CustomField
+                pregunta={item}
+                control={control}
+                index={index}
+                errors={errors}
+              />
             )}
           />
         </ThemedView>
@@ -202,8 +231,13 @@ const FormInspeccion = ({
             <FlatList
               data={preguntasI}
               keyExtractor={(item) => item.codigo}
-              renderItem={({ item,index }) => (
-                <CustomField pregunta={item} control={control} index={index}/>
+              renderItem={({ item, index }) => (
+                <CustomField
+                  pregunta={item}
+                  control={control}
+                  index={index}
+                  errors={errors}
+                />
               )}
             />
           </ThemedView>
@@ -238,11 +272,11 @@ const FormInspeccion = ({
             onPress={handleSubmit(enviarFormulario)}
             className={
               "flex-1 justify-center items-center bg-light-success dark:bg-dark-success py-3 active:opacity-80" +
-                "disabled:bg-gray-300"
+              "disabled:bg-gray-300"
             }
             disabled={isSaving}
           >
-              {!isSaving ?<SaveIcon size={30} />:<SpinnerIcon size={30}/>}
+            {!isSaving ? <SaveIcon size={30} /> : <SpinnerIcon size={30} />}
           </Pressable>
         )}
       </View>
