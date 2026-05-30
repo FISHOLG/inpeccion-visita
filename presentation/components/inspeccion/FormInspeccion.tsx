@@ -14,6 +14,7 @@ import {
 } from "@/infraestructure/interfaces/main.interface";
 import CustomField from "@/presentation/components/inspeccion/CustomField";
 import { useDataInspeccion } from "@/presentation/hooks/useDataInspeccion";
+import ErrorValid from "@/presentation/shared/ErrorValid";
 import ThemedText from "@/presentation/shared/ThemedText";
 import ThemedView from "@/presentation/shared/ThemedView";
 import { ConfirmDialog } from "@/presentation/utils";
@@ -58,13 +59,13 @@ const FormInspeccion = ({
   } = useForm<FormularioInspeccion>();
 
   const nextPage = async () => {
-    const camposPaso1 = preguntasU.map(
-      (p) => `respuestas.${Number(p.codigo)}.respuesta`,
-    ) as FieldPath<FormularioInspeccion>[];
+    const camposPaso1 = preguntasU.map((p) => {
+      if (p.obligatorio) return `respuestas.${Number(p.codigo)}.respuesta`;
+    }) as FieldPath<FormularioInspeccion>[];
 
     const valid = await trigger(camposPaso1);
     if (!valid) {
-      Toast.warn("complete los campos obligatorios");
+      Toast.warn("Complete los campos obligatorios");
       return;
     }
 
@@ -76,6 +77,17 @@ const FormInspeccion = ({
   };
 
   const saveInspeccion = async (datosSave: FormInspecc) => {
+    console.log("click");
+    // const camposPaso2 = preguntasI.map(
+    //   (p) => `respuestas.${Number(p.codigo)}.respuesta`,
+    // ) as FieldPath<FormularioInspeccion>[];
+
+    // const valid = await trigger(camposPaso2);
+    // if (!valid) {
+    //   Toast.warn("complete los campos obligatorios");
+    //   return;
+    // }
+
     setIsSaving(true);
 
     try {
@@ -104,16 +116,6 @@ const FormInspeccion = ({
   };
 
   const enviarFormulario = async (data: FormularioInspeccion) => {
-    const camposPaso2 = preguntasI.map(
-      (p) => `respuestas.${Number(p.codigo)}.respuesta`,
-    ) as FieldPath<FormularioInspeccion>[];
-
-    const valid = await trigger(camposPaso2);
-    if (!valid) {
-      Toast.warn("complete los campos obligatorios");
-      return;
-    }
-
     const respuestas = data.respuestas;
 
     const nuevasRespuestas: DetalleInspeccion[] = respuestas.reduce<
@@ -244,7 +246,7 @@ const FormInspeccion = ({
         )
       )}
 
-      <View className={"flex-row pt-5"}>
+      <View className={"flex-row pt-5 mb-2"}>
         {stepPage > 1 && (
           <Pressable
             onPress={prevPage}
@@ -270,16 +272,17 @@ const FormInspeccion = ({
         {stepPage === maxPage && (
           <Pressable
             onPress={handleSubmit(enviarFormulario)}
-            className={
-              "flex-1 justify-center items-center bg-light-success dark:bg-dark-success py-3 active:opacity-80" +
-              "disabled:bg-gray-300"
-            }
+            className={`flex-1 justify-center items-center py-3 active:opacity-70 bg-light-success dark:bg-dark-success disabled:opacity-70`}
             disabled={isSaving}
           >
             {!isSaving ? <SaveIcon size={30} /> : <SpinnerIcon size={30} />}
           </Pressable>
         )}
       </View>
+
+      {(errors.respuestas?.length ?? 0) > 0 && (
+        <ErrorValid message="Complete los campos obligatorios" />
+      )}
     </>
   );
 };

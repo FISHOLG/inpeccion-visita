@@ -1,5 +1,6 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-
+import { useEffect, useRef } from "react";
+import { Animated, Easing } from "react-native";
 interface IconProps {
   size?: number;
   color?: string;
@@ -16,15 +17,35 @@ export const LogoutIcon = (props: IconProps) => (
   <MaterialCommunityIcons name="logout" size={24} color="white" {...props} />
 );
 
-export const SpinnerIcon = (props: IconProps) => (
-  <MaterialCommunityIcons
-    name="loading"
-    size={24}
-    color="white"
-    spin
-    {...props}
-  />
-);
+export const SpinnerIcon = ({ size = 24, color = "white" }) => {
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 1000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    ).start();
+  }, []);
+
+  const rotate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "360deg"],
+  });
+
+  return (
+    <Animated.View
+      style={{
+        transform: [{ rotate }],
+      }}
+    >
+      <MaterialCommunityIcons name="loading" size={size} color={color} />
+    </Animated.View>
+  );
+};
 
 export const UserIcon = (props: IconProps) => (
   <MaterialCommunityIcons
