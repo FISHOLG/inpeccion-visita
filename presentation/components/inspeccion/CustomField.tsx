@@ -245,7 +245,7 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
         <View
           className={`${pregunta.categoriaPregunta === "I" && "flex-row items-center border-b border-gray-300"} gap-3  py-4`}
         >
-          <View className="flex-row items-center gap-3">
+          <View className="flex-[4] flex-row items-center gap-3">
             <PreguntaTitulo />
             {pregunta.obligatorio && (
               <ExclamationIcon className="text-red-500" size={20} />
@@ -284,9 +284,9 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
     case "C":
       return (
         <View
-          className={`${pregunta.categoriaPregunta === "I" && "flex-row items-center border-b border-gray-300"} gap-3  py-4`}
+          className={`${pregunta.categoriaPregunta === "I" && " flex-row items-center border-b border-gray-300"} gap-3  py-4`}
         >
-          <View className="flex-row items-center gap-3">
+          <View className="flex-[4] flex-row items-center gap-3">
             <PreguntaTitulo />
             {pregunta.obligatorio && (
               <ExclamationIcon className="text-red-500" size={20} />
@@ -301,7 +301,7 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
             )}
           />
           <View
-            className={`${pregunta.categoriaPregunta === "I" && "flex-1"} items-center justify-center`}
+            className={`${pregunta.categoriaPregunta === "I" && "flex-1"} items-center justify-center w-24`}
           >
             <Controller
               control={control}
@@ -464,7 +464,7 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
           <View
             className={`${pregunta.categoriaPregunta === "I" && "flex-row items-center border-b border-gray-300"} gap-3 py-4`}
           >
-            <View className="flex-row items-center gap-3">
+            <View className="flex-[4] flex-row items-center gap-3">
               <PreguntaTitulo />
               {pregunta.obligatorio && (
                 <ExclamationIcon className="text-red-500" size={20} />
@@ -531,7 +531,7 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
         <View
           className={`${pregunta.categoriaPregunta === "I" && "flex-row items-center border-b border-gray-300"} gap-3  py-4`}
         >
-          <View className="flex-row items-center gap-3">
+          <View className="flex-[4] flex-row items-center gap-3">
             <PreguntaTitulo />
             {pregunta.obligatorio && (
               <ExclamationIcon className="text-red-500" size={20} />
