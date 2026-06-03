@@ -7,20 +7,12 @@ import ThemedText from "@/presentation/shared/ThemedText";
 import { ConfirmDialog } from "@/presentation/utils";
 import { Checkbox } from "@futurejj/react-native-checkbox";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import * as FileSystem from "expo-file-system/legacy";
+import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { ImagePickerAsset } from "expo-image-picker";
 import React, { useEffect, useRef, useState } from "react";
 import { Control, Controller, FieldErrors } from "react-hook-form";
-import {
-  Alert,
-  Image,
-  Modal,
-  Platform,
-  Pressable,
-  TextInput,
-  View,
-} from "react-native";
+import { Alert, Image, Modal, Pressable, TextInput, View } from "react-native";
 
 interface Props {
   pregunta: PreguntaInspeccion;
@@ -37,6 +29,9 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
   const [cameraVisible, setCameraVisible] = useState(false);
   const [takingPhoto, setTakingPhoto] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
+
+  // NUEVO: Estado para controlar el montaje seguro de la cámara en la PDA
+  const [mountCamera, setMountCamera] = useState(false);
 
   const pickImage = async () => {
     // No permissions request is necessary for launching the image library
@@ -93,6 +88,63 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
     }
   };
 
+  // const capturePhoto = async (
+  //   onChange: (
+  //     value: { uri: string; mimeType?: string; extension?: string } | null,
+  //   ) => void,
+  // ) => {
+  //   try {
+  //     if (!cameraRef.current) return;
+
+  //     const result = await cameraRef.current.takePictureAsync({
+  //       quality: 0.7,
+  //       base64: false,
+  //       skipProcessing: true,
+  //     });
+
+  //     console.log(result);
+
+  //     let uri = result.uri;
+
+  //     // convertir a base64 SOLO si realmente lo necesitas
+  //     if (Platform.OS === "android" || Platform.OS === "ios") {
+  //       const base64 = await FileSystem.readAsStringAsync(result.uri, {
+  //         encoding: "base64",
+  //       });
+
+  //       uri = `data:image/jpeg;base64,${base64}`;
+  //     }
+
+  //     onChange({
+  //       uri,
+  //       mimeType: "image/jpeg",
+  //       extension: "jpg",
+  //     });
+
+  //     // cerrar cámara de forma segura liberando recursos
+  //     closeCamera();
+  //   } catch (error: any) {
+  //     console.log("ERROR CAMARA:", error);
+
+  //     closeCamera();
+
+  //     const message = error?.message?.toLowerCase?.() || "";
+
+  //     if (
+  //       message.includes("camera") ||
+  //       message.includes("busy") ||
+  //       message.includes("cannot")
+  //     ) {
+  //       Alert.alert(
+  //         "La cámara está siendo usada por otra aplicación o el hardware del escáner.",
+  //       );
+  //     } else {
+  //       Alert.alert("No se pudo tomar la foto.");
+  //     }
+  //   }
+  // };
+
+  // NUEVO: Función centralizada para desmontar la cámara ordenadamente
   const capturePhoto = async (
     onChange: (
       value: { uri: string; mimeType?: string; extension?: string } | null,
@@ -101,24 +153,29 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
     try {
       if (!cameraRef.current) return;
 
+      // 1. Captura rápida de la foto en bruto
       const result = await cameraRef.current.takePictureAsync({
-        quality: 0.7,
-        base64: false,
-        skipProcessing: true,
+        quality: 0.8, // Calidad inicial alta para no perder enfoque
+        base64: false, // Falso aquí, lo delegamos al manipulador
+        skipProcessing: true, // Evita procesamiento extra del sistema operativo
       });
 
-      console.log(result);
+      console.log("Foto capturada en bruto:", result.uri);
 
-      let uri = result.uri;
+      // 2. Optimización Nativa (Redimensionar + Comprimir + Base64 todo en un paso)
+      // Pasamos la imagen por el hilo nativo reduciendo el ancho a 1280px (suficiente para auditorías)
+      const manipulated = await ImageManipulator.manipulateAsync(
+        result.uri,
+        [{ resize: { width: 1280 } }], // Mantiene la relación de aspecto automáticamente
+        {
+          compress: 0.6, // Compresión al 60% (ideal para texto/inspecciones sin pixelear)
+          format: ImageManipulator.SaveFormat.JPEG, // ¡Usa siempre JPEG! PNG es extremadamente lento
+          base64: true, // El motor nativo genera el Base64 de forma ultra veloz
+        },
+      );
 
-      // convertir a base64 SOLO si realmente lo necesitas
-      if (Platform.OS === "android" || Platform.OS === "ios") {
-        const base64 = await FileSystem.readAsStringAsync(result.uri, {
-          encoding: "base64",
-        });
-
-        uri = `data:image/jpeg;base64,${base64}`;
-      }
+      // 3. Construimos el URI en Base64 optimizado
+      const uri = `data:image/jpeg;base64,${manipulated.base64}`;
 
       onChange({
         uri,
@@ -126,90 +183,35 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
         extension: "jpg",
       });
 
-      // cerrar cámara
-      setCameraReady(false);
-
-      setTimeout(() => {
-        setCameraVisible(false);
-      }, 100);
+      // Cerrar cámara de forma segura liberando recursos
+      closeCamera();
     } catch (error: any) {
       console.log("ERROR CAMARA:", error);
 
-      setCameraReady(false);
-
-      setTimeout(() => {
-        setCameraVisible(false);
-      }, 100);
+      closeCamera();
 
       const message = error?.message?.toLowerCase?.() || "";
-
       if (
         message.includes("camera") ||
         message.includes("busy") ||
         message.includes("cannot")
       ) {
-        Alert.alert("La cámara está siendo usada por otra aplicación.");
+        Alert.alert(
+          "La cámara está siendo usada por otra aplicación o el hardware de la PDA.",
+        );
       } else {
         Alert.alert("No se pudo tomar la foto.");
       }
     }
   };
 
-  // const takePhoto = async (
-  //   onChange: (
-  //     value: { uri: string; mimeType?: string; extension?: string } | null,
-  //   ) => void,
-  // ) => {
-  //   // pedir permisos de cámara
-  //   const permission = await ImagePicker.requestCameraPermissionsAsync();
-  //   if (!permission.granted) {
-  //     alert("Se requiere permiso para usar la cámara.");
-  //     return;
-  //   }
-
-  //   // abrir cámara
-  //   const result = await ImagePicker.launchCameraAsync({
-  //     mediaTypes: ["images", "videos"],
-  //     quality: 0.7,
-  //     // quality: 1,
-  //     allowsEditing: false,
-  //   });
-
-  //   console.log(result);
-
-  //   if (!result.canceled) {
-  //     let uri = result.assets[0].uri;
-
-  //     /*const manipulated = await ImageManipulator.manipulateAsync(
-  //             result.assets[0].uri,
-  //             [{ resize: { width: 1280 } }],
-  //             {
-  //               compress: 0.6,
-  //               format: ImageManipulator.SaveFormat.PNG,
-  //               base64: true,
-  //             },
-  //         );
-
-  //         uri = `data:${result.assets[0].mimeType};base64,${manipulated.base64}`;*/
-
-  //     if (Platform.OS === "android" || Platform.OS === "ios") {
-  //       const base64 = await FileSystem.readAsStringAsync(
-  //         result.assets[0].uri,
-  //         {
-  //           encoding: "base64",
-  //         },
-  //       );
-
-  //       uri = `data:${result.assets[0].mimeType};base64,${base64}`;
-  //     }
-
-  //     onChange({
-  //       uri: uri,
-  //       mimeType: result.assets[0].mimeType,
-  //       extension: obtenerExtension(result.assets[0].fileName),
-  //     });
-  //   }
-  // };
+  const closeCamera = () => {
+    setCameraReady(false);
+    setMountCamera(false); // Desmonta la cámara primero para liberar el hardware
+    setTimeout(() => {
+      setCameraVisible(false);
+    }, 100);
+  };
 
   const deleteImage = (onChange: (value: null) => void) => {
     ConfirmDialog(
@@ -233,6 +235,7 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
   useEffect(() => {
     return () => {
       setCameraReady(false);
+      setMountCamera(false);
       setCameraVisible(false);
     };
   }, []);
@@ -307,9 +310,6 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
               control={control}
               name={`respuestas.${Number(pregunta.codigo)}.respuesta`}
               defaultValue={false}
-              // rules={{
-              //   required: pregunta.obligatorio,
-              // }}
               render={({ field: { value, onChange } }) => (
                 <Checkbox
                   status={value ? "checked" : "unchecked"}
@@ -321,61 +321,6 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
           </View>
         </View>
       );
-    // case "B":
-    //   return (
-    //     <View
-    //       className={`${pregunta.categoriaPregunta === "I" && "flex-row items-center border-b border-gray-300"} gap-3  py-4`}
-    //     >
-    //
-    //         <PreguntaTitulo />
-    //       <Controller
-    //         control={control}
-    //         name={`respuestas.${Number(pregunta.codigo)}.codPregunta`}
-    //         defaultValue={pregunta.codigo}
-    //         render={({ field: { value } }) => (
-    //           <TextInput className={"hidden"} value={value} />
-    //         )}
-    //       />
-    //       <Controller
-    //         control={control}
-    //         name={`respuestas.${Number(pregunta.codigo)}.respuesta`}
-    //         render={({ field: { value, onChange } }) =>
-    //           value &&
-    //           typeof value === "object" &&
-    //           "mimeType" in value &&
-    //           value.mimeType?.includes("image") ? (
-    //             <View
-    //               className={`${pregunta.categoriaPregunta === "I" && "flex-1"} flex-row items-center gap-x-5`}
-    //             >
-    //               <Image
-    //                 source={{ uri: value.uri }}
-    //                 style={{ width: 100, height: 100 }}
-    //               />
-    //               <Pressable
-    //                 onPress={() => deleteImage(onChange)}
-    //                 className={
-    //                   "bg-light-danger dark:bg-dark-danger p-2 rounded-lg justify-center items-center  " +
-    //                   `${pregunta.categoriaPregunta === "I" && "w-auto"}`
-    //                 }
-    //               >
-    //                 <CloseIcon />
-    //               </Pressable>
-    //             </View>
-    //           ) : (
-    //             <Pressable
-    //               onPress={() => takePhoto(onChange)}
-    //               className={
-    //                 "bg-light-primary dark:bg-dark-primary p-2 rounded-lg justify-center items-center " +
-    //                 `${pregunta.categoriaPregunta === "I" && "flex-1"}`
-    //               }
-    //             >
-    //               <CameraIcon />
-    //             </Pressable>
-    //           )
-    //         }
-    //       />
-    //     </View>
-    //   );
     case "B":
       return (
         <View className="relative">
@@ -387,13 +332,13 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
             presentationStyle="fullScreen"
             statusBarTranslucent={false}
             hardwareAccelerated
-            onRequestClose={() => {
-              setCameraReady(false);
-
+            // NUEVO: Espera a que el modal se renderice en la PDA antes de levantar la cámara
+            onShow={() => {
               setTimeout(() => {
-                setCameraVisible(false);
-              }, 100);
+                setMountCamera(true);
+              }, 250); // Delay estratégico para liberar hilos del escáner Chainway
             }}
+            onRequestClose={closeCamera}
           >
             <View
               style={{
@@ -401,18 +346,24 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
                 backgroundColor: "black",
               }}
             >
-              <CameraView
-                ref={cameraRef}
-                style={{
-                  flex: 1,
-                }}
-                facing="back"
-                autofocus="on"
-                animateShutter
-                onCameraReady={() => {
-                  setCameraReady(true);
-                }}
-              />
+              {/* NUEVO: Montaje condicional y asignación de relación de aspecto 4:3 industrial */}
+              {mountCamera ? (
+                <CameraView
+                  ref={cameraRef}
+                  style={{
+                    flex: 1,
+                  }}
+                  facing="back"
+                  autofocus="on"
+                  animateShutter
+                  ratio="4:3"
+                  onCameraReady={() => {
+                    setCameraReady(true);
+                  }}
+                />
+              ) : (
+                <View style={{ flex: 1, backgroundColor: "black" }} />
+              )}
 
               {/* BOTONES */}
               <View
@@ -427,10 +378,7 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
               >
                 {/* CERRAR */}
                 <Pressable
-                  onPress={() => {
-                    setCameraVisible(false);
-                    setCameraReady(false);
-                  }}
+                  onPress={closeCamera}
                   style={{
                     backgroundColor: "red",
                     padding: 18,
@@ -461,6 +409,8 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
               </View>
             </View>
           </Modal>
+
+          {/* Conservados intactos tus nuevos cambios de maquetación con flex-[4] */}
           <View
             className={`${pregunta.categoriaPregunta === "I" && "flex-row items-center border-b border-gray-300"} gap-3 py-4`}
           >
@@ -499,16 +449,6 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
                       source={{ uri: value.uri }}
                       style={{ width: 180, height: 120 }}
                     />
-
-                    {/* <Pressable
-                  onPress={() => deleteImage(onChange)}
-                  className={
-                    "bg-light-danger dark:bg-dark-danger p-2 rounded-lg justify-center items-center " +
-                    `${pregunta.categoriaPregunta === "I" && "w-auto"}`
-                  }
-                >
-                  <CloseIcon />
-                </Pressable> */}
                   </Pressable>
                 ) : (
                   <Pressable
@@ -550,19 +490,6 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
             name={`respuestas.${Number(pregunta.codigo)}.respuesta`}
             rules={{ required: pregunta.obligatorio }}
             render={({ field: { value, onChange } }) => (
-              /* <TextInput
-                className={
-                  "py-5 bg-white rounded-md px-3 font-semibold text-lg border" +
-                  " border-[#D0D0D0]" +
-                  `${pregunta.categoriaPregunta === "I" && "flex-1"}`
-                }
-                inputMode={"decimal"}
-                value={ typeof value === 'string'  ||  typeof value === 'number' ? value.toString() : ""}
-                onChangeText={(text) => {
-                  const num = text === "" ? null : Number(text);
-                  onChange(num);
-                }}
-              />*/
               <TextInput
                 className={
                   "py-5 bg-white rounded-md px-3 font-semibold text-lg border border-[#D0D0D0]" +
@@ -574,17 +501,6 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
                 }
                 onChangeText={(text) => {
                   onChange(text);
-
-                  // const regex = /^-?\d*\.?\d*$/
-                  //
-                  // if (!regex.test(text)) return
-                  //
-                  //
-                  // if (text === "" || text === "-" || text === "." || text === "-.") {
-                  //   onChange(text)
-                  // } else {
-                  //   onChange(Number(text))
-                  // }
                 }}
               />
             )}
