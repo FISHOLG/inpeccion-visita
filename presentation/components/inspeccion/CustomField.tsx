@@ -30,11 +30,13 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
   const [takingPhoto, setTakingPhoto] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
 
-  // NUEVO: Estado para controlar el montaje seguro de la cámara en la PDA
+  // CONTROL DE MONTAJE SEGURO EN LA PDA
   const [mountCamera, setMountCamera] = useState(false);
 
+  // SOLUCIÓN PANTALLA NEGRA: Fuerza la recreación del hilo nativo del lente
+  const [cameraKey, setCameraKey] = useState(0);
+
   const pickImage = async () => {
-    // No permissions request is necessary for launching the image library
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images", "videos"],
       allowsEditing: true,
@@ -52,7 +54,7 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
   function obtenerExtension(filename: string | null | undefined): string {
     if (!filename) return "";
     const partes = filename.split(".");
-    if (partes.length === 1) return ""; // No tiene extensión
+    if (partes.length === 1) return "";
     return partes.pop() || "";
   }
 
@@ -63,118 +65,58 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
   ) => {
     try {
       if (takingPhoto) return;
-
       setTakingPhoto(true);
 
       // permisos
       if (!permission?.granted) {
         const response = await requestPermission();
-
         if (!response.granted) {
           alert("Se requiere permiso para usar la cámara.");
-
           return;
         }
       }
 
-      // abrir cámara
+      // Incrementamos la Key para resetear de raíz el estado del hardware de video
+      setCameraKey((prev) => prev + 1);
+
+      // abrir modal contenedor
       setCameraVisible(true);
     } catch (error) {
       console.log(error);
-
       alert("No se pudo abrir la cámara.");
     } finally {
       setTakingPhoto(false);
     }
   };
 
-  // const capturePhoto = async (
-  //   onChange: (
-  //     value: { uri: string; mimeType?: string; extension?: string } | null,
-  //   ) => void,
-  // ) => {
-  //   try {
-  //     if (!cameraRef.current) return;
-
-  //     const result = await cameraRef.current.takePictureAsync({
-  //       quality: 0.7,
-  //       base64: false,
-  //       skipProcessing: true,
-  //     });
-
-  //     console.log(result);
-
-  //     let uri = result.uri;
-
-  //     // convertir a base64 SOLO si realmente lo necesitas
-  //     if (Platform.OS === "android" || Platform.OS === "ios") {
-  //       const base64 = await FileSystem.readAsStringAsync(result.uri, {
-  //         encoding: "base64",
-  //       });
-
-  //       uri = `data:image/jpeg;base64,${base64}`;
-  //     }
-
-  //     onChange({
-  //       uri,
-  //       mimeType: "image/jpeg",
-  //       extension: "jpg",
-  //     });
-
-  //     // cerrar cámara de forma segura liberando recursos
-  //     closeCamera();
-  //   } catch (error: any) {
-  //     console.log("ERROR CAMARA:", error);
-
-  //     closeCamera();
-
-  //     const message = error?.message?.toLowerCase?.() || "";
-
-  //     if (
-  //       message.includes("camera") ||
-  //       message.includes("busy") ||
-  //       message.includes("cannot")
-  //     ) {
-  //       Alert.alert(
-  //         "La cámara está siendo usada por otra aplicación o el hardware del escáner.",
-  //       );
-  //     } else {
-  //       Alert.alert("No se pudo tomar la foto.");
-  //     }
-  //   }
-  // };
-
-  // NUEVO: Función centralizada para desmontar la cámara ordenadamente
   const capturePhoto = async (
     onChange: (
       value: { uri: string; mimeType?: string; extension?: string } | null,
     ) => void,
   ) => {
     try {
-      if (!cameraRef.current) return;
+      if (!cameraRef.current || !cameraReady) return;
 
       // 1. Captura rápida de la foto en bruto
       const result = await cameraRef.current.takePictureAsync({
-        quality: 0.8, // Calidad inicial alta para no perder enfoque
-        base64: false, // Falso aquí, lo delegamos al manipulador
-        skipProcessing: true, // Evita procesamiento extra del sistema operativo
+        quality: 0.8,
+        base64: false,
+        skipProcessing: true,
       });
 
       console.log("Foto capturada en bruto:", result.uri);
 
-      // 2. Optimización Nativa (Redimensionar + Comprimir + Base64 todo en un paso)
-      // Pasamos la imagen por el hilo nativo reduciendo el ancho a 1280px (suficiente para auditorías)
+      // 2. Optimización Nativa sin congelar el puente JS
       const manipulated = await ImageManipulator.manipulateAsync(
         result.uri,
-        [{ resize: { width: 1280 } }], // Mantiene la relación de aspecto automáticamente
+        [{ resize: { width: 1280 } }],
         {
-          compress: 0.6, // Compresión al 60% (ideal para texto/inspecciones sin pixelear)
-          format: ImageManipulator.SaveFormat.JPEG, // ¡Usa siempre JPEG! PNG es extremadamente lento
-          base64: true, // El motor nativo genera el Base64 de forma ultra veloz
+          compress: 0.6,
+          format: ImageManipulator.SaveFormat.JPEG,
+          base64: true,
         },
       );
 
-      // 3. Construimos el URI en Base64 optimizado
       const uri = `data:image/jpeg;base64,${manipulated.base64}`;
 
       onChange({
@@ -183,11 +125,9 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
         extension: "jpg",
       });
 
-      // Cerrar cámara de forma segura liberando recursos
       closeCamera();
     } catch (error: any) {
       console.log("ERROR CAMARA:", error);
-
       closeCamera();
 
       const message = error?.message?.toLowerCase?.() || "";
@@ -207,7 +147,7 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
 
   const closeCamera = () => {
     setCameraReady(false);
-    setMountCamera(false); // Desmonta la cámara primero para liberar el hardware
+    setMountCamera(false); // Desmontamos inmediatamente para forzar la liberación del lente
     setTimeout(() => {
       setCameraVisible(false);
     }, 100);
@@ -332,11 +272,11 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
             presentationStyle="fullScreen"
             statusBarTranslucent={false}
             hardwareAccelerated
-            // NUEVO: Espera a que el modal se renderice en la PDA antes de levantar la cámara
+            // Dellay pa que el OS desconecte el servicio
             onShow={() => {
               setTimeout(() => {
                 setMountCamera(true);
-              }, 250); // Delay estratégico para liberar hilos del escáner Chainway
+              }, 350);
             }}
             onRequestClose={closeCamera}
           >
@@ -346,9 +286,9 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
                 backgroundColor: "black",
               }}
             >
-              {/* NUEVO: Montaje condicional y asignación de relación de aspecto 4:3 industrial */}
               {mountCamera ? (
                 <CameraView
+                  key={cameraKey}
                   ref={cameraRef}
                   style={{
                     flex: 1,
@@ -410,7 +350,6 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
             </View>
           </Modal>
 
-          {/* Conservados intactos tus nuevos cambios de maquetación con flex-[4] */}
           <View
             className={`${pregunta.categoriaPregunta === "I" && "flex-row items-center border-b border-gray-300"} gap-3 py-4`}
           >
@@ -447,7 +386,7 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
                   >
                     <Image
                       source={{ uri: value.uri }}
-                      style={{ width: 180, height: 120 }}
+                      style={{ width: 180, height: 120, borderRadius: 6 }}
                     />
                   </Pressable>
                 ) : (
