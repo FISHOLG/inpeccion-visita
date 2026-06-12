@@ -7,7 +7,6 @@ import ThemedText from "@/presentation/shared/ThemedText";
 import { ConfirmDialog } from "@/presentation/utils";
 import { Checkbox } from "@futurejj/react-native-checkbox";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { ImagePickerAsset } from "expo-image-picker";
 import React, { useEffect, useRef, useState } from "react";
@@ -100,27 +99,28 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
       // 1. Captura rápida de la foto en bruto
       const result = await cameraRef.current.takePictureAsync({
         quality: 0.8,
-        base64: false,
+        base64: true,
         skipProcessing: true,
       });
 
       console.log("Foto capturada en bruto:", result.uri);
 
       // 2. Optimización Nativa sin congelar el puente JS
-      const manipulated = await ImageManipulator.manipulateAsync(
-        result.uri,
-        [{ resize: { width: 1280 } }],
-        {
-          compress: 0.6,
-          format: ImageManipulator.SaveFormat.JPEG,
-          base64: true,
-        },
-      );
 
-      const uri = `data:image/jpeg;base64,${manipulated.base64}`;
+      // const manipulated = await ImageManipulator.manipulateAsync(
+      //   result.uri,
+      //   [{ resize: { width: 800 } }],
+      //   {
+      //     compress: 0.4,
+      //     format: ImageManipulator.SaveFormat.JPEG,
+      //     //  base64: true,
+      //   },
+      // );
+
+      //  const uri = `data:image/jpeg;base64,${manipulated.base64}`;
 
       onChange({
-        uri,
+        uri: `data:image/jpeg;base64,${result.base64}`,
         mimeType: "image/jpeg",
         extension: "jpg",
       });
