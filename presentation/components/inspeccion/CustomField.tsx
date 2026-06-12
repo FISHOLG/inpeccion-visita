@@ -311,7 +311,7 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
                   position: "absolute",
                   bottom: 40,
                   width: "100%",
-                  flexDirection: "row",
+                  flexDirection: "row-reverse",
                   justifyContent: "space-around",
                   alignItems: "center",
                 }}
