@@ -11,11 +11,12 @@ export const ListarVehiculos = async () => {
     const { data } = peticion.data;
 
 
-      return data.map(VehiculoMapper.FromVehiculoDbToVehiculo);
+      return Array.isArray(data) ? data.map(VehiculoMapper.FromVehiculoDbToVehiculo) : []; // --- correcion guardado inspeccion
 
 
   } catch (error) {
       console.log(error)
+      return []; // --- correcion guardado inspeccion
   }
 };
 
@@ -27,6 +28,9 @@ export const ListarVehiculosVisita = async () => {
 
         const { data } = peticion.data;
 
-        return data.map(VehiculoMapper.FromVahiculosViDBtoVahiculosVisita);
-    } catch (error) {}
+        return Array.isArray(data) ? data.map(VehiculoMapper.FromVahiculosViDBtoVahiculosVisita) : []; // --- correcion guardado inspeccion
+    } catch (error) {
+        console.log(error);
+        return []; // --- correcion guardado inspeccion
+    }
 };

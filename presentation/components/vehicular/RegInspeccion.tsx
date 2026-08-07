@@ -29,7 +29,7 @@ const RegInspeccion = ({ tipo }: Props) => {
   };
   const orientation = useScreenOrientation();
   const isPortrait = orientation === "portrait";
-  const numColumns = isPortrait ? 1 : listVehiculos.length;
+  const numColumns = isPortrait ? 1 : Math.max(1, listVehiculos?.length ?? 1); // --- correcion guardado inspeccion
 
   /* useEffect(() => {
     if (!ListVehiculos.isLoading && ListVehiculos.data) {
@@ -53,7 +53,7 @@ const RegInspeccion = ({ tipo }: Props) => {
     const listarVehiculosPP = async () => {
       setLoadingVehiculos(true);
       const listaVehiculos = await ListarVehiculos();
-      setListVehiculos(listaVehiculos);
+      setListVehiculos(listaVehiculos ?? []); // --- correcion guardado inspeccion
       setLoadingVehiculos(false);
     };
 

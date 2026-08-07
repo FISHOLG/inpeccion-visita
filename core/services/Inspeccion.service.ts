@@ -10,11 +10,13 @@ export const obtenerPreguntas = async (codUnidad: string) => {
 
     const { data } = peticion.data;
 
-    return data.map(
-      InspeccionMapper.FromInspeccionDataResponsetoPreguntaInspeccion,
-    );
+    // --- correcion guardado inspeccion
+    return Array.isArray(data)
+      ? data.map(InspeccionMapper.FromInspeccionDataResponsetoPreguntaInspeccion)
+      : [];
   } catch (error) {
     console.log(error);
+    return []; // --- correcion guardado inspeccion
   }
 };
 
@@ -26,18 +28,23 @@ export const guardarInspeccion = async (datos: FormInspecc) => {
 
     return data;
   } catch (error: any) {
-    let message: string;
+    // --- correcion guardado inspeccion
+    let message: unknown;
 
-    if (error.code && error.code === "ERR_NETWORK") {
-      message = error.message + ":" + JSON.stringify(error);
-    } else if (error.response) {
-      message = error.response.data.error;
-    } else if (error.request) {
+    if (error?.code === "ERR_NETWORK") {
+      message = "SIN CONEXION CON EL SERVIDOR";
+    } else if (error?.response) {
+      const resp = error.response.data;
+      message =
+        (typeof resp === "object" ? resp?.error : undefined) ??
+        (typeof resp === "string" ? resp.slice(0, 300) : undefined) ??
+        `ERROR ${error.response.status}`;
+    } else if (error?.request) {
       message = error.message;
     } else {
-      message = error;
+      message = error?.message ?? error;
     }
 
-    return { error: message.toString() };
+    return { error: String(message ?? "ERROR DESCONOCIDO") };
   }
 };

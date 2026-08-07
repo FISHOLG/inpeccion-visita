@@ -65,7 +65,7 @@ const FormInspeccion = ({
 
     const valid = await trigger(camposPaso1);
     if (!valid) {
-      Toast.warn("Complete los campos obligatorios");
+      Toast.warn("COMPLETE LOS CAMPOS OBLIGATORIOS");
       return;
     }
 
@@ -101,7 +101,7 @@ const FormInspeccion = ({
 
       if (!peticion.success) {
         setIsSaving(false);
-        Toast.error("Error Desconocido");
+        Toast.error("ERROR DESCONOCIDO");
         return;
       }
 
@@ -109,8 +109,8 @@ const FormInspeccion = ({
       setIsSaving(false);
       router.replace("/");
     } catch (error) {
-      console.log("Error al guardar inspeccion:", error);
-      Toast.error("Error al guardar inspeccion");
+      console.log("ERROR AL GUARDAR INSPECCION:", error);
+      Toast.error("ERROR AL GUARDAR INSPECCION");
       setIsSaving(false);
     }
   };

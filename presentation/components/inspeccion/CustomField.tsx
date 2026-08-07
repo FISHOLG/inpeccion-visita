@@ -7,6 +7,7 @@ import ThemedText from "@/presentation/shared/ThemedText";
 import { ConfirmDialog } from "@/presentation/utils";
 import { Checkbox } from "@futurejj/react-native-checkbox";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import { ImageManipulator, SaveFormat } from "expo-image-manipulator"; // --- correcion guardado inspeccion
 import * as ImagePicker from "expo-image-picker";
 import { ImagePickerAsset } from "expo-image-picker";
 import React, { useEffect, useRef, useState } from "react";
@@ -99,28 +100,28 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
       // 1. Captura rápida de la foto en bruto
       const result = await cameraRef.current.takePictureAsync({
         quality: 0.8,
-        base64: true,
+        base64: false,
         skipProcessing: true,
       });
 
-      console.log("Foto capturada en bruto:", result.uri);
+      if (!result?.uri) throw new Error("Sin imagen capturada");
 
-      // 2. Optimización Nativa sin congelar el puente JS
+      // 2. Optimización Nativa
 
-      // const manipulated = await ImageManipulator.manipulateAsync(
-      //   result.uri,
-      //   [{ resize: { width: 800 } }],
-      //   {
-      //     compress: 0.4,
-      //     format: ImageManipulator.SaveFormat.JPEG,
-      //     //  base64: true,
-      //   },
-      // );
+      const contexto = ImageManipulator.manipulate(result.uri);
+      contexto.resize({ width: 1024 });
 
-      //  const uri = `data:image/jpeg;base64,${manipulated.base64}`;
+      const renderizada = await contexto.renderAsync();
+      const optimizada = await renderizada.saveAsync({
+        compress: 0.5,
+        format: SaveFormat.JPEG,
+        base64: true,
+      });
+
+      if (!optimizada.base64) throw new Error("No se pudo optimizar la imagen");
 
       onChange({
-        uri: `data:image/jpeg;base64,${result.base64}`,
+        uri: `data:image/jpeg;base64,${optimizada.base64}`,
         mimeType: "image/jpeg",
         extension: "jpg",
       });
