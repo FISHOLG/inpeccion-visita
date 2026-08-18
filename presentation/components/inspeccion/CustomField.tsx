@@ -164,11 +164,24 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
     );
   };
 
-  const PreguntaTitulo = () => (
-    <ThemedText
-      className={`${pregunta.categoriaPregunta === "I" && "flex-[4]"}`}
-      type="form-text"
-    >
+  const esInspeccion = pregunta.categoriaPregunta === "I";
+
+  const claseFila = esInspeccion
+    ? "flex-row items-center border-b border-gray-300 gap-3 py-4"
+    : "gap-3 py-4";
+
+  const claseLabel = esInspeccion
+    ? "flex-[4] flex-row items-center gap-3"
+    : "flex-row items-center gap-3";
+
+  const claseInput =
+    "py-5 bg-white rounded-md px-3 font-semibold text-lg border border-[#D0D0D0]" +
+    (esInspeccion ? " flex-1" : "");
+
+  // Definido como elemento y no como componente anidado: si fuera un componente
+  // creado dentro del render, React lo desmontaria y remontaria en cada tecla.
+  const PreguntaTitulo = (
+    <ThemedText className={esInspeccion ? "flex-1" : ""} type="form-text">
       {pregunta.descripcion}
     </ThemedText>
   );
@@ -186,11 +199,9 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
   switch (pregunta.tipoCampo) {
     case "V":
       return (
-        <View
-          className={`${pregunta.categoriaPregunta === "I" && "flex-row items-center border-b border-gray-300"} gap-3  py-4`}
-        >
-          <View className="flex-[4] flex-row items-center gap-3">
-            <PreguntaTitulo />
+        <View className={claseFila}>
+          <View className={claseLabel}>
+            {PreguntaTitulo}
             {pregunta.obligatorio && (
               <ExclamationIcon className="text-red-500" size={20} />
             )}
@@ -213,11 +224,7 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
             }}
             render={({ field: { value, onChange } }) => (
               <TextInput
-                className={
-                  "py-5 bg-white rounded-md px-3 font-semibold text-lg border" +
-                  " border-[#D0D0D0] " +
-                  `${pregunta.categoriaPregunta === "I" && "flex-1"}`
-                }
+                className={claseInput}
                 value={typeof value === "string" ? value.toString() : ""}
                 onChangeText={onChange}
               />
@@ -227,11 +234,9 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
       );
     case "C":
       return (
-        <View
-          className={`${pregunta.categoriaPregunta === "I" && " flex-row items-center border-b border-gray-300"} gap-3  py-4`}
-        >
-          <View className="flex-[4] flex-row items-center gap-3">
-            <PreguntaTitulo />
+        <View className={claseFila}>
+          <View className={claseLabel}>
+            {PreguntaTitulo}
             {pregunta.obligatorio && (
               <ExclamationIcon className="text-red-500" size={20} />
             )}
@@ -245,7 +250,7 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
             )}
           />
           <View
-            className={`${pregunta.categoriaPregunta === "I" && "flex-1"} items-center justify-center w-24`}
+            className={`items-center justify-center w-24${esInspeccion ? " flex-1" : ""}`}
           >
             <Controller
               control={control}
@@ -351,11 +356,9 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
             </View>
           </Modal>
 
-          <View
-            className={`${pregunta.categoriaPregunta === "I" && "flex-row items-center border-b border-gray-300"} gap-3 py-4`}
-          >
-            <View className="flex-[4] flex-row items-center gap-3">
-              <PreguntaTitulo />
+          <View className={claseFila}>
+            <View className={claseLabel}>
+              {PreguntaTitulo}
               {pregunta.obligatorio && (
                 <ExclamationIcon className="text-red-500" size={20} />
               )}
@@ -383,7 +386,7 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
                 value.mimeType?.includes("image") ? (
                   <Pressable
                     onPress={() => deleteImage(onChange)}
-                    className={`${pregunta.categoriaPregunta === "I" && "flex-1"} flex-row items-center gap-x-5`}
+                    className={`flex-row items-center gap-x-5${esInspeccion ? " flex-1" : ""}`}
                   >
                     <Image
                       source={{ uri: value.uri }}
@@ -394,8 +397,8 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
                   <Pressable
                     onPress={() => takePhoto(onChange)}
                     className={
-                      "bg-light-primary dark:bg-dark-primary p-2 rounded-lg justify-center items-center " +
-                      `${pregunta.categoriaPregunta === "I" && "flex-1"}`
+                      "bg-light-primary dark:bg-dark-primary p-2 rounded-lg justify-center items-center" +
+                      (esInspeccion ? " flex-1" : "")
                     }
                   >
                     <CameraIcon />
@@ -408,11 +411,9 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
       );
     case "N":
       return (
-        <View
-          className={`${pregunta.categoriaPregunta === "I" && "flex-row items-center border-b border-gray-300"} gap-3  py-4`}
-        >
-          <View className="flex-[4] flex-row items-center gap-3">
-            <PreguntaTitulo />
+        <View className={claseFila}>
+          <View className={claseLabel}>
+            {PreguntaTitulo}
             {pregunta.obligatorio && (
               <ExclamationIcon className="text-red-500" size={20} />
             )}
@@ -431,10 +432,7 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
             rules={{ required: pregunta.obligatorio }}
             render={({ field: { value, onChange } }) => (
               <TextInput
-                className={
-                  "py-5 bg-white rounded-md px-3 font-semibold text-lg border border-[#D0D0D0]" +
-                  `${pregunta.categoriaPregunta === "I" && "flex-1"}`
-                }
+                className={claseInput}
                 inputMode="decimal"
                 value={
                   value !== null && value !== undefined ? value.toString() : ""
