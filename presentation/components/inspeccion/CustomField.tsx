@@ -1,21 +1,59 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Alert, Image, Modal, Pressable, TextInput, View } from "react-native";
-import { Control, Controller, FieldErrors } from "react-hook-form";
 import { Checkbox } from "@futurejj/react-native-checkbox";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator"; // --- correcion guardado inspeccion
 import * as ImagePicker from "expo-image-picker";
 import { ImagePickerAsset } from "expo-image-picker";
+import React, { useEffect, useRef, useState } from "react";
+import { Control, Controller, FieldErrors } from "react-hook-form";
+import { Alert, Image, Modal, Pressable, TextInput, View } from "react-native";
 
 import { palette } from "@/constants/Colors";
+import {
+  CameraIcon,
+  CloseIcon,
+  SpinnerIcon,
+  TrashIcon,
+} from "@/constants/Icons";
 import { cx, elevation } from "@/constants/Theme";
-import { CameraIcon, CloseIcon, TrashIcon } from "@/constants/Icons";
 import {
   FormularioInspeccion,
   PreguntaInspeccion,
 } from "@/infraestructure/interfaces/main.interface";
 import ThemedText from "@/presentation/shared/ThemedText";
 import { ConfirmDialog } from "@/presentation/utils";
+
+// AJUSTES DE LA FOTO FINAL
+const ANCHO_FOTO = 1024;
+const COMPRESION_FOTO = 0.5;
+const RETARDO_MONTAJE_MS = 150;
+
+// El tamano de captura se consulta una sola vez y se reutiliza en todos los campos
+let tamanoFotoCache: string | null = null;
+let tamanoFotoConsultado = false;
+
+const elegirTamanoFoto = (tamanos: string[]): string | null => {
+  const opciones = tamanos
+    .map((tam) => {
+      const [ancho, alto] = tam.split("x").map(Number);
+      return { tam, ancho, alto };
+    })
+    .filter((o) => Number.isFinite(o.ancho) && Number.isFinite(o.alto))
+    .sort((a, b) => a.ancho * a.alto - b.ancho * b.alto);
+
+  if (opciones.length === 0) return null;
+
+  const cuatroTercios = opciones.filter(
+    (o) => Math.abs(o.ancho / o.alto - 4 / 3) < 0.05,
+  );
+  const candidatas = cuatroTercios.length > 0 ? cuatroTercios : opciones;
+
+  return (
+    candidatas.find((o) => Math.max(o.ancho, o.alto) >= ANCHO_FOTO)?.tam ??
+    candidatas[candidatas.length - 1].tam
+  );
+};
+
+type FuenteImagen = Parameters<typeof ImageManipulator.manipulate>[0];
 
 interface Props {
   pregunta: PreguntaInspeccion;
@@ -25,7 +63,6 @@ interface Props {
 }
 
 const CustomField = ({ pregunta, control, index, errors }: Props) => {
-  /* EN CASO SEA BOTON BOOLEAN */
   const [image, setImage] = useState<ImagePickerAsset | null>(null);
   const cameraRef = useRef<CameraView | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
@@ -33,10 +70,10 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
   const [takingPhoto, setTakingPhoto] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
 
-  // CONTROL DE MONTAJE SEGURO EN LA PDA
+  // La optimizacion corre con la camara ya cerrada
+  const [procesando, setProcesando] = useState(false);
+  const [tamanoFoto, setTamanoFoto] = useState<string | null>(null);
   const [mountCamera, setMountCamera] = useState(false);
-
-  // SOLUCIÓN PANTALLA NEGRA: Fuerza la recreación del hilo nativo del lente
   const [cameraKey, setCameraKey] = useState(0);
 
   const pickImage = async () => {
@@ -61,6 +98,17 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
     return partes.pop() || "";
   }
 
+  const cachearTamanoFoto = async () => {
+    if (tamanoFotoConsultado || !cameraRef.current) return;
+    tamanoFotoConsultado = true;
+    try {
+      const tamanos = await cameraRef.current.getAvailablePictureSizesAsync();
+      tamanoFotoCache = elegirTamanoFoto(tamanos ?? []);
+    } catch (error) {
+      console.log("NO SE PUDO LEER LOS TAMANOS DE CAPTURA:", error);
+    }
+  };
+
   const takePhoto = async (
     onChange: (
       value: { uri: string; mimeType?: string; extension?: string } | null,
@@ -79,10 +127,8 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
         }
       }
 
-      // Incrementamos la Key para resetear de raíz el estado del hardware de video
       setCameraKey((prev) => prev + 1);
-
-      // abrir modal contenedor
+      setTamanoFoto(tamanoFotoCache);
       setCameraVisible(true);
     } catch (error) {
       console.log(error);
@@ -97,26 +143,36 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
       value: { uri: string; mimeType?: string; extension?: string } | null,
     ) => void,
   ) => {
+    const camara = cameraRef.current;
+    if (!camara || !cameraReady || procesando) return;
+
+    setProcesando(true);
+
     try {
-      if (!cameraRef.current || !cameraReady) return;
+      let fuente: FuenteImagen | null = null;
 
-      // 1. Captura rápida de la foto en bruto
-      const result = await cameraRef.current.takePictureAsync({
-        quality: 0.8,
-        base64: false,
-        skipProcessing: true,
-      });
+      try {
+        fuente = await camara.takePictureAsync({ pictureRef: true });
+      } catch (errorRef) {
+        console.log("SIN CAPTURA EN MEMORIA, USANDO ARCHIVO:", errorRef);
+        const result = await camara.takePictureAsync({
+          quality: 0.8,
+          base64: false,
+          skipProcessing: true,
+        });
+        fuente = result?.uri ?? null;
+      }
 
-      if (!result?.uri) throw new Error("Sin imagen capturada");
+      if (!fuente) throw new Error("Sin imagen capturada");
 
-      // 2. Optimización Nativa
+      closeCamera();
 
-      const contexto = ImageManipulator.manipulate(result.uri);
-      contexto.resize({ width: 1024 });
+      const contexto = ImageManipulator.manipulate(fuente);
+      contexto.resize({ width: ANCHO_FOTO });
 
       const renderizada = await contexto.renderAsync();
       const optimizada = await renderizada.saveAsync({
-        compress: 0.5,
+        compress: COMPRESION_FOTO,
         format: SaveFormat.JPEG,
         base64: true,
       });
@@ -128,8 +184,6 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
         mimeType: "image/jpeg",
         extension: "jpg",
       });
-
-      closeCamera();
     } catch (error: any) {
       console.log("ERROR CAMARA:", error);
       closeCamera();
@@ -146,12 +200,14 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
       } else {
         Alert.alert("No se pudo tomar la foto.");
       }
+    } finally {
+      setProcesando(false);
     }
   };
 
   const closeCamera = () => {
     setCameraReady(false);
-    setMountCamera(false); // Desmontamos inmediatamente para forzar la liberación del lente
+    setMountCamera(false);
     setTimeout(() => {
       setCameraVisible(false);
     }, 100);
@@ -315,7 +371,7 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
             onShow={() => {
               setTimeout(() => {
                 setMountCamera(true);
-              }, 350);
+              }, RETARDO_MONTAJE_MS);
             }}
             onRequestClose={closeCamera}
           >
@@ -334,10 +390,12 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
                   }}
                   facing="back"
                   autofocus="on"
-                  animateShutter
+                  animateShutter={false}
                   ratio="4:3"
+                  pictureSize={tamanoFoto ?? undefined}
                   onCameraReady={() => {
                     setCameraReady(true);
+                    cachearTamanoFoto();
                   }}
                 />
               ) : (
@@ -394,7 +452,7 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
                   name={`respuestas.${Number(pregunta.codigo)}.respuesta`}
                   render={({ field: { onChange } }) => (
                     <Pressable
-                      disabled={!cameraReady}
+                      disabled={!cameraReady || procesando}
                       onPress={() => capturePhoto(onChange)}
                       style={{
                         backgroundColor: "white",
@@ -403,7 +461,7 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
                         borderRadius: 100,
                         borderWidth: 5,
                         borderColor: "rgba(255,255,255,0.45)",
-                        opacity: cameraReady ? 1 : 0.5,
+                        opacity: cameraReady && !procesando ? 1 : 0.5,
                       }}
                     />
                   )}
@@ -459,6 +517,22 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
                       <TrashIcon size={18} color={palette.onPrimary} />
                     </View>
                   </Pressable>
+                ) : procesando ? (
+                  <View
+                    style={elevation(1)}
+                    className={cx(
+                      "flex-row items-center justify-center gap-x-2 rounded-xl bg-app-primary px-4 py-4 opacity-70",
+                      esInspeccion ? "flex-[2]" : "self-start",
+                    )}
+                  >
+                    <SpinnerIcon size={24} />
+                    <ThemedText
+                      type="semi-bold"
+                      className="uppercase text-white"
+                    >
+                      Procesando...
+                    </ThemedText>
+                  </View>
                 ) : (
                   <Pressable
                     onPress={() => takePhoto(onChange)}
