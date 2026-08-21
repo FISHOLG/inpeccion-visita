@@ -1,6 +1,8 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useEffect, useRef } from "react";
-import { Animated, Easing } from "react-native";
+import { Animated, Easing, View } from "react-native";
+import { palette } from "@/constants/Colors";
+
 interface IconProps {
   size?: number;
   color?: string;
@@ -9,27 +11,78 @@ interface IconProps {
   className?: string;
 }
 
-export const LoginIcon = (props: IconProps) => (
-  <MaterialCommunityIcons name="login" size={24} color="white" {...props} />
-);
+type MCIName = React.ComponentProps<typeof MaterialCommunityIcons>["name"];
 
-export const LogoutIcon = (props: IconProps) => (
-  <MaterialCommunityIcons name="logout" size={24} color="white" {...props} />
-);
+const makeIcon = (name: MCIName, defaultColor: string = palette.onPrimary) => {
+  const Icon = ({ size = 24, color = defaultColor, ...rest }: IconProps) => (
+    <MaterialCommunityIcons name={name} size={size} color={color} {...rest} />
+  );
+  Icon.displayName = `Icon(${name})`;
+  return Icon;
+};
 
-export const SpinnerIcon = ({ size = 24, color = "white" }) => {
+export const LoginIcon = makeIcon("login-variant");
+export const LogoutIcon = makeIcon("logout-variant");
+export const UserIcon = makeIcon("account-circle", palette.primary);
+export const UserCogIcon = makeIcon("account-cog", palette.primary);
+export const LockIcon = makeIcon("lock-outline", palette.textMuted);
+export const EyeIcon = makeIcon("eye-outline", palette.textSecond);
+export const EyeOffIcon = makeIcon("eye-off-outline", palette.textSecond);
+export const BadgeIcon = makeIcon("badge-account-horizontal-outline", palette.textMuted);
+
+export const CarIcon = makeIcon("car-estate", palette.primary);
+export const CarLeftIcon = makeIcon("car-arrow-left");
+export const CarRightIcon = makeIcon("car-arrow-right");
+export const TruckIcon = makeIcon("truck-outline", palette.primary);
+export const VanIcon = makeIcon("van-passenger", palette.primary);
+export const PlateIcon = makeIcon("card-text-outline", palette.textSecond);
+export const ShieldCheckIcon = makeIcon("shield-car", palette.onPrimary);
+export const WrenchIcon = makeIcon("car-wrench", palette.primary);
+export const GaugeIcon = makeIcon("gauge", palette.primary);
+export const ClipboardListIcon = makeIcon("clipboard-list-outline");
+export const ClipboardCheckIcon = makeIcon("clipboard-check-outline");
+export const BookSearchIcon = makeIcon("clipboard-text-search-outline");
+
+export const SaveIcon = makeIcon("content-save-check-outline");
+export const CloseIcon = makeIcon("close");
+export const ReloadIcon = makeIcon("refresh", palette.primary);
+export const TrashIcon = makeIcon("trash-can-outline");
+export const CameraIcon = makeIcon("camera-plus-outline");
+export const ImageIcon = makeIcon("image-outline", palette.textSecond);
+export const SearchIcon = makeIcon("magnify", palette.textMuted);
+export const CheckBoxIcon = makeIcon("checkbox-marked");
+
+export const ArrowLeftIcon = makeIcon("arrow-left");
+export const ArrowLeftBoldIcon = makeIcon("arrow-left");
+export const ArrowRightBoldIcon = makeIcon("arrow-right");
+export const ChevronRightIcon = makeIcon("chevron-right", palette.textMuted);
+
+export const ExclamationIcon = makeIcon("asterisk", palette.danger);
+export const AlertIcon = makeIcon("alert-circle-outline", palette.danger);
+export const CheckCircleIcon = makeIcon("check-circle-outline", palette.success);
+export const InfoIcon = makeIcon("information-outline", palette.info);
+export const ClockIcon = makeIcon("clock-outline", palette.textSecond);
+export const CalendarIcon = makeIcon("calendar-blank-outline", palette.textSecond);
+export const InboxEmptyIcon = makeIcon("clipboard-remove-outline", palette.textMuted);
+
+export const SpinnerIcon = ({
+  size = 24,
+  color = palette.onPrimary,
+}: IconProps) => {
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.loop(
+    const loop = Animated.loop(
       Animated.timing(rotateAnim, {
         toValue: 1,
-        duration: 1000,
+        duration: 900,
         easing: Easing.linear,
         useNativeDriver: true,
       }),
-    ).start();
-  }, []);
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [rotateAnim]);
 
   const rotate = rotateAnim.interpolate({
     inputRange: [0, 1],
@@ -37,123 +90,37 @@ export const SpinnerIcon = ({ size = 24, color = "white" }) => {
   });
 
   return (
-    <Animated.View
-      style={{
-        transform: [{ rotate }],
-      }}
-    >
+    <Animated.View style={{ transform: [{ rotate }] }}>
       <MaterialCommunityIcons name="loading" size={size} color={color} />
     </Animated.View>
   );
 };
 
-export const UserIcon = (props: IconProps) => (
-  <MaterialCommunityIcons
-    name="account-cog"
-    size={24}
-    color="white"
-    {...props}
-  />
-);
+interface BrandProps {
+  size?: number;
+  background?: string;
+  color?: string;
+}
 
-export const SaveIcon = (props: IconProps) => (
-  <MaterialCommunityIcons
-    name="content-save"
-    size={24}
-    color="white"
-    {...props}
-  />
-);
-
-export const CloseIcon = (props: IconProps) => (
-  <MaterialCommunityIcons
-    name="window-close"
-    size={24}
-    color="white"
-    {...props}
-  />
-);
-
-export const ReloadIcon = (props: IconProps) => (
-  <MaterialCommunityIcons name="reload" size={24} color="white" {...props} />
-);
-
-export const CheckBoxIcon = (props: IconProps) => (
-  <MaterialCommunityIcons
-    name="checkbox-marked"
-    size={24}
-    color="white"
-    {...props}
-  />
-);
-
-export const CarIcon = (props: IconProps) => (
-  <MaterialCommunityIcons name="car" size={24} color="white" {...props} />
-);
-
-export const CarLeftIcon = (props: IconProps) => (
-  <MaterialCommunityIcons
-    name="car-arrow-left"
-    size={24}
-    color="white"
-    {...props}
-  />
-);
-
-export const CarRightIcon = (props: IconProps) => (
-  <MaterialCommunityIcons
-    name="car-arrow-right"
-    size={24}
-    color="white"
-    {...props}
-  />
-);
-
-export const BookSearchIcon = (props: IconProps) => (
-  <MaterialCommunityIcons
-    name="book-search"
-    size={24}
-    color="white"
-    {...props}
-  />
-);
-
-export const ArrowLeftIcon = (props: IconProps) => (
-  <MaterialCommunityIcons
-    name="arrow-left-thick"
-    size={24}
-    color="white"
-    {...props}
-  />
-);
-
-export const ArrowLeftBoldIcon = (props: IconProps) => (
-  <MaterialCommunityIcons
-    name="arrow-left-bold"
-    size={24}
-    color="white"
-    {...props}
-  />
-);
-
-export const ArrowRightBoldIcon = (props: IconProps) => (
-  <MaterialCommunityIcons
-    name="arrow-right-bold"
-    size={24}
-    color="white"
-    {...props}
-  />
-);
-
-export const CameraIcon = (props: IconProps) => (
-  <MaterialCommunityIcons name="camera" size={24} color="white" {...props} />
-);
-
-export const ExclamationIcon = (props: IconProps) => (
-  <MaterialCommunityIcons
-    name="exclamation-thick"
-    size={24}
-    color="white"
-    {...props}
-  />
+export const BrandMark = ({
+  size = 72,
+  background = palette.primary,
+  color = palette.onPrimary,
+}: BrandProps) => (
+  <View
+    style={{
+      width: size,
+      height: size,
+      borderRadius: size * 0.28,
+      backgroundColor: background,
+      alignItems: "center",
+      justifyContent: "center",
+    }}
+  >
+    <MaterialCommunityIcons
+      name="shield-car"
+      size={size * 0.58}
+      color={color}
+    />
+  </View>
 );

@@ -1,6 +1,15 @@
+import React, { useEffect, useState } from "react";
+import { FlatList, Pressable, View } from "react-native";
+import { FieldPath, useForm } from "react-hook-form";
+import { router } from "expo-router";
+import { Toast } from "toastify-react-native";
+
+import { palette } from "@/constants/Colors";
 import {
   ArrowLeftBoldIcon,
   ArrowRightBoldIcon,
+  ClipboardCheckIcon,
+  GaugeIcon,
   SaveIcon,
   SpinnerIcon,
 } from "@/constants/Icons";
@@ -15,14 +24,10 @@ import {
 import CustomField from "@/presentation/components/inspeccion/CustomField";
 import { useDataInspeccion } from "@/presentation/hooks/useDataInspeccion";
 import ErrorValid from "@/presentation/shared/ErrorValid";
+import Loader from "@/presentation/shared/Loader";
 import ThemedText from "@/presentation/shared/ThemedText";
 import ThemedView from "@/presentation/shared/ThemedView";
 import { ConfirmDialog } from "@/presentation/utils";
-import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
-import { FieldPath, useForm } from "react-hook-form";
-import { ActivityIndicator, FlatList, Pressable, View } from "react-native";
-import { Toast } from "toastify-react-native";
 
 interface Props {
   tipoIns: string;
@@ -78,15 +83,6 @@ const FormInspeccion = ({
 
   const saveInspeccion = async (datosSave: FormInspecc) => {
     console.log("click");
-    // const camposPaso2 = preguntasI.map(
-    //   (p) => `respuestas.${Number(p.codigo)}.respuesta`,
-    // ) as FieldPath<FormularioInspeccion>[];
-
-    // const valid = await trigger(camposPaso2);
-    // if (!valid) {
-    //   Toast.warn("complete los campos obligatorios");
-    //   return;
-    // }
 
     setIsSaving(true);
 
@@ -126,8 +122,6 @@ const FormInspeccion = ({
       }
       return acc;
     }, []);
-
-    //console.log(nuevasRespuestas);
 
     const datosSave: FormInspecc = {
       usuario: auth?.codUsr ?? "",
@@ -176,114 +170,111 @@ const FormInspeccion = ({
     }
   }, [ListPreguntas.isLoading, ListPreguntas.data]);
 
-  /*useEffect(() => {
-    console.log(errors);
-  }, [errors]);*/
+  if (ListPreguntas.isLoading) return <Loader message="Cargando formulario" />;
 
-  /*useEffect(() => {
-        console.log('exito')
-        Toast.success(' Exitoso');
-    }, []);*/
+  const esPasoUnidad = stepPage === 1;
 
-  if (ListPreguntas.isLoading)
-    return (
-      <View className="justify-center items-center flex-1">
-        <ActivityIndicator color="gray" size={40} />
+  const Encabezado = (
+    <View className="border-b border-app-border bg-app-surface">
+      <View className="flex-row items-center gap-x-3 px-4 pb-3 pt-4">
+        <View className="h-11 w-11 items-center justify-center rounded-xl bg-app-primarySoft">
+          {esPasoUnidad ? (
+            <GaugeIcon size={24} color={palette.primary} />
+          ) : (
+            <ClipboardCheckIcon size={24} color={palette.primary} />
+          )}
+        </View>
+
+        <View className="flex-1">
+          <ThemedText type="label" className="text-app-textMuted">
+            Paso {stepPage} de {maxPage}
+            {placa ? ` · ${placa}` : ""}
+          </ThemedText>
+          <ThemedText type="h4" className="uppercase text-app-textMain">
+            {esPasoUnidad ? "Datos de la unidad" : "Datos de inspeccion"}
+          </ThemedText>
+        </View>
       </View>
-    );
+
+      <View className="h-1.5 w-full flex-row bg-app-surfaceSunken">
+        <View
+          className="h-full bg-app-primary"
+          style={{ width: `${(stepPage / maxPage) * 100}%` }}
+        />
+      </View>
+    </View>
+  );
 
   return (
-    <>
-      {stepPage === 1 ? (
-        <ThemedView safeb>
-          <ThemedText
-            type={"h3"}
-            className={
-              "uppercase bg-light-navbar dark:bg-dark-navbar p-2 font-bold"
-            }
-          >
-            Datos de la Unidad
-          </ThemedText>
-          <FlatList
-            data={preguntasU}
-            keyExtractor={(item) => item.codigo}
-            renderItem={({ item, index }) => (
-              <CustomField
-                pregunta={item}
-                control={control}
-                index={index}
-                errors={errors}
-              />
-            )}
-          />
-        </ThemedView>
-      ) : (
-        stepPage === 2 && (
-          <ThemedView safeb>
-            <View className={"flex-row"}>
-              <ThemedText
-                className={
-                  "flex-[4] uppercase bg-light-navbar dark:bg-dark-navbar p-2 font-bold"
-                }
-                type={"h3"}
-              >
-                Datos de Inspeccion
-              </ThemedText>
-            </View>
-            <FlatList
-              data={preguntasI}
-              keyExtractor={(item) => item.codigo}
-              renderItem={({ item, index }) => (
-                <CustomField
-                  pregunta={item}
-                  control={control}
-                  index={index}
-                  errors={errors}
-                />
-              )}
+    <ThemedView safeb>
+      {Encabezado}
+
+      <View className="flex-1">
+        <FlatList
+          data={esPasoUnidad ? preguntasU : preguntasI}
+          keyExtractor={(item) => item.codigo}
+          contentContainerStyle={{ padding: 14, paddingBottom: 20 }}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item, index }) => (
+            <CustomField
+              pregunta={item}
+              control={control}
+              index={index}
+              errors={errors}
             />
-          </ThemedView>
-        )
+          )}
+        />
+      </View>
+
+      {(errors.respuestas?.length ?? 0) > 0 && (
+        <View className="px-4 pb-2">
+          <ErrorValid message="Complete los campos obligatorios" />
+        </View>
       )}
 
-      <View className={"flex-row pt-5 mb-2"}>
+      <View className="flex-row gap-x-3 border-t border-app-border bg-app-surface px-4 py-3">
         {stepPage > 1 && (
           <Pressable
             onPress={prevPage}
-            className={
-              "flex-1 justify-center items-center bg-light-danger dark:bg-dark-danger py-3 active:opacity-80"
-            }
+            className="flex-1 flex-row items-center justify-center gap-x-2 rounded-xl bg-app-surfaceAlt border border-app-borderStrong py-4 active:opacity-70"
           >
-            <ArrowLeftBoldIcon size={30} />
+            <ArrowLeftBoldIcon size={22} color={palette.textMain} />
+            <ThemedText type="semi-bold" className="uppercase text-app-textMain">
+              Atras
+            </ThemedText>
           </Pressable>
         )}
 
         {stepPage < maxPage && (
           <Pressable
             onPress={nextPage}
-            className={
-              "flex-1 justify-center items-center bg-light-success dark:bg-dark-success py-3 active:opacity-80"
-            }
+            className="flex-1 flex-row items-center justify-center gap-x-2 rounded-xl bg-app-primary py-4 active:opacity-70"
           >
-            <ArrowRightBoldIcon size={30} />
+            <ThemedText type="semi-bold" className="uppercase text-white">
+              Siguiente
+            </ThemedText>
+            <ArrowRightBoldIcon size={22} color={palette.onPrimary} />
           </Pressable>
         )}
 
         {stepPage === maxPage && (
           <Pressable
             onPress={handleSubmit(enviarFormulario)}
-            className={`flex-1 justify-center items-center py-3 active:opacity-70 bg-light-success dark:bg-dark-success disabled:opacity-70`}
             disabled={isSaving}
+            className={`flex-1 flex-row items-center justify-center gap-x-2 rounded-xl bg-app-success py-4 active:opacity-70 ${isSaving ? "opacity-60" : ""}`}
           >
-            {!isSaving ? <SaveIcon size={30} /> : <SpinnerIcon size={30} />}
+            {!isSaving ? (
+              <SaveIcon size={22} color={palette.onPrimary} />
+            ) : (
+              <SpinnerIcon size={22} />
+            )}
+            <ThemedText type="semi-bold" className="uppercase text-white">
+              {isSaving ? "Guardando..." : "Guardar"}
+            </ThemedText>
           </Pressable>
         )}
       </View>
-
-      {(errors.respuestas?.length ?? 0) > 0 && (
-        <ErrorValid message="Complete los campos obligatorios" />
-      )}
-    </>
+    </ThemedView>
   );
 };
 

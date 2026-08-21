@@ -1,55 +1,97 @@
-import { CarIcon } from "@/constants/Icons";
-import { useThemeColor } from "@/hooks/useThemeColor";
-import { VehiculosVisita } from "@/infraestructure/interfaces/main.interface";
-import ThemedText from "@/presentation/shared/ThemedText";
 import React from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
+import { palette } from "@/constants/Colors";
+import {
+  CalendarIcon,
+  CarLeftIcon,
+  CarRightIcon,
+  ChevronRightIcon,
+  ClipboardListIcon,
+} from "@/constants/Icons";
+import { VehiculosVisita } from "@/infraestructure/interfaces/main.interface";
+import Card from "@/presentation/shared/Card";
+import Chip from "@/presentation/shared/Chip";
+import ThemedText from "@/presentation/shared/ThemedText";
 
 interface Props {
   vehiculo: VehiculosVisita;
   seleccionarVehiculo: (data: VehiculosVisita) => void;
 }
 
+const Placa = ({ valor }: { valor: string }) => (
+  <View className="rounded-md border-2 border-app-textMain bg-white px-3 py-1">
+    <ThemedText type="plate" className="text-app-textMain">
+      {valor}
+    </ThemedText>
+  </View>
+);
+
 const CardVisita = ({ vehiculo, seleccionarVehiculo }: Props) => {
-  const iconColor = useThemeColor({}, "textMain");
+  const esIngreso = vehiculo.tipoInspeccion === "I";
+  const acento = esIngreso ? palette.success : palette.danger;
 
   return (
-    <Pressable
+    <Card
       onPress={() => seleccionarVehiculo(vehiculo)}
-      className={`flex-grow flex-row gap-x-8 mb-5 p-5  rounded-2xl active:opacity-60 ${vehiculo.tipoInspeccion === "I" ? "bg-light-success dark:bg-dark-success" : "bg-light-danger dark:bg-dark-danger"}`}
+      accentColor={acento}
+      level={2}
+      className="mb-4 flex-grow"
     >
-      <View className={"justify-center items-center gap-y-3 w-1/4"}>
-        <CarIcon color={iconColor} size={45} />
-        <ThemedText type={"h1"}>{vehiculo.placa1}</ThemedText>
-        {vehiculo.placa2 && (
-          <ThemedText type={"h1"}>{vehiculo.placa2}</ThemedText>
-        )}
-      </View>
+      <View className="gap-y-3 px-4 py-4">
+        <View className="flex-row items-center gap-x-2">
+          <View
+            className="h-11 w-11 items-center justify-center rounded-xl"
+            style={{ backgroundColor: acento }}
+          >
+            {esIngreso ? (
+              <CarLeftIcon size={24} color={palette.onPrimary} />
+            ) : (
+              <CarRightIcon size={24} color={palette.onPrimary} />
+            )}
+          </View>
 
-      <View className={"flex-1 justify-between gap-8"}>
-        <View className={"justify-end gap-x-5 items-end"}>
-          <ThemedText type={"semi-bold"} className={"uppercase "}>
-            # Visita {vehiculo.codIngreso}
-          </ThemedText>
-          <ThemedText type={"semi-bold"} className={"uppercase "}>
-            {" "}
-            {vehiculo.fechaIngreso}
-          </ThemedText>
+          <View className="flex-1">
+            <Chip
+              label={esIngreso ? "Ingreso" : "Salida"}
+              tone={esIngreso ? "success" : "danger"}
+            />
+          </View>
+
+          <ChevronRightIcon size={26} />
         </View>
-        <ThemedText type={"h1"} className={" uppercase"}>
+
+        <View className="flex-row flex-wrap items-center gap-2">
+          <Placa valor={vehiculo.placa1} />
+          {vehiculo.placa2 ? <Placa valor={vehiculo.placa2} /> : null}
+        </View>
+
+        <ThemedText
+          type="h4"
+          className="uppercase text-app-textSecond"
+          numberOfLines={2}
+        >
           {vehiculo.modelo}
         </ThemedText>
-        <ThemedText
-          type={"h2"}
-          className={
-            "uppercase text-right text-light-textMain dark:text-dark-textMain"
-          }
-        >
-          {" "}
-          {vehiculo.tipoInspeccion === "I" ? "Ingreso" : "Salida"}
-        </ThemedText>
+
+        <View className="h-px bg-app-border" />
+
+        <View className="flex-row items-center justify-between gap-x-3">
+          <View className="flex-row items-center gap-x-1.5">
+            <ClipboardListIcon size={16} color={palette.textMuted} />
+            <ThemedText type="caption" className="uppercase text-app-textMuted">
+              Visita {vehiculo.codIngreso}
+            </ThemedText>
+          </View>
+
+          <View className="flex-row items-center gap-x-1.5">
+            <CalendarIcon size={16} color={palette.textMuted} />
+            <ThemedText type="caption" className="text-app-textMuted">
+              {vehiculo.fechaIngreso}
+            </ThemedText>
+          </View>
+        </View>
       </View>
-    </Pressable>
+    </Card>
   );
 };
 

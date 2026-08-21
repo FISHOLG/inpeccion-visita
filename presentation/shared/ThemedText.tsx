@@ -9,32 +9,43 @@ type TextOptions =
   | "h4"
   | "bold"
   | "semi-bold"
-  | "form-text";
+  | "form-text"
+  | "label"
+  | "caption"
+  | "plate";
 
 interface Props extends TextProps {
   type?: TextOptions;
   className?: string;
 }
 
-const ThemedText = ({ className, type, children, ...rest }: Props) => {
+const variants: Record<TextOptions, string> = {
+  normal: "text-base",
+  h1: "text-2xl lg:text-3xl font-extrabold uppercase tracking-tight",
+  h2: "text-xl lg:text-2xl font-bold",
+  h3: "text-base lg:text-xl font-bold",
+  h4: "text-sm lg:text-lg font-semibold",
+  bold: "font-bold",
+  "semi-bold": "text-sm md:text-base font-semibold",
+  "form-text": "text-base md:text-lg font-semibold",
+  label: "text-xs font-bold uppercase tracking-widest",
+  caption: "text-xs font-medium",
+  plate: "text-xl lg:text-2xl font-extrabold tracking-[2px] uppercase",
+};
+
+const ThemedText = ({ className, type = "normal", children, ...rest }: Props) => {
   return (
     <Text
       className={[
-        // "text-light-textMain dark:text-dark-textMain",
-        type === "normal" ? "font-normal" : undefined,
-        type === "h1" ? "font-bold text-xl lg:text-3xl uppercase" : undefined,
-        type === "h2" ? "font-semibold text-lg lg:text-2xl" : undefined,
-        type === "h3" ? "font-semibold text-base lg:text-xl" : undefined,
-        type === "h4" ? "font-semibold text-sm lg:text-lg" : undefined,
-        type === "bold" ? "font-bold" : undefined,
-        type === "semi-bold" ? "text-sm md:text-base font-semibold" : undefined,
-        type === "form-text" ? " text-base md:text-xl  font-semibold uppercase" : undefined,
-        !className?.includes("text-") &&
-          "text-light-textMain dark:text-dark-textMain",
+        variants[type] ?? variants.normal,
+        !className?.includes("text-app-") &&
+          !className?.includes("text-white") &&
+          "text-app-textMain",
         className,
       ]
         .filter(Boolean)
         .join(" ")}
+      {...rest}
     >
       {children}
     </Text>

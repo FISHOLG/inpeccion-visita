@@ -2,7 +2,10 @@ import { useAuthContext } from "@/core/stores/AuthContext.store";
 import { Href, Redirect } from "expo-router";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { useEffect } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { View } from "react-native";
+import { BrandMark } from "@/constants/Icons";
+import Loader from "@/presentation/shared/Loader";
+import ThemedText from "@/presentation/shared/ThemedText";
 
 const index = () => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -28,8 +31,16 @@ const index = () => {
 
   if (loading)
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#000" />
+      <View className="flex-1 bg-app-background">
+        <View className="flex-1 items-center justify-end gap-y-4 pb-6">
+          <BrandMark size={88} />
+          <ThemedText type="h2" className="uppercase text-app-primaryDeep">
+            Inspeccion Vehicular
+          </ThemedText>
+        </View>
+        <View className="flex-1">
+          <Loader message="Verificando sesion" />
+        </View>
       </View>
     );
 

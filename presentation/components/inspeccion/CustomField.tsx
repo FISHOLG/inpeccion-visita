@@ -1,18 +1,21 @@
-import { CameraIcon, CloseIcon, ExclamationIcon } from "@/constants/Icons";
+import React, { useEffect, useRef, useState } from "react";
+import { Alert, Image, Modal, Pressable, TextInput, View } from "react-native";
+import { Control, Controller, FieldErrors } from "react-hook-form";
+import { Checkbox } from "@futurejj/react-native-checkbox";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import { ImageManipulator, SaveFormat } from "expo-image-manipulator"; // --- correcion guardado inspeccion
+import * as ImagePicker from "expo-image-picker";
+import { ImagePickerAsset } from "expo-image-picker";
+
+import { palette } from "@/constants/Colors";
+import { cx, elevation } from "@/constants/Theme";
+import { CameraIcon, CloseIcon, TrashIcon } from "@/constants/Icons";
 import {
   FormularioInspeccion,
   PreguntaInspeccion,
 } from "@/infraestructure/interfaces/main.interface";
 import ThemedText from "@/presentation/shared/ThemedText";
 import { ConfirmDialog } from "@/presentation/utils";
-import { Checkbox } from "@futurejj/react-native-checkbox";
-import { CameraView, useCameraPermissions } from "expo-camera";
-import { ImageManipulator, SaveFormat } from "expo-image-manipulator"; // --- correcion guardado inspeccion
-import * as ImagePicker from "expo-image-picker";
-import { ImagePickerAsset } from "expo-image-picker";
-import React, { useEffect, useRef, useState } from "react";
-import { Control, Controller, FieldErrors } from "react-hook-form";
-import { Alert, Image, Modal, Pressable, TextInput, View } from "react-native";
 
 interface Props {
   pregunta: PreguntaInspeccion;
@@ -165,25 +168,42 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
   };
 
   const esInspeccion = pregunta.categoriaPregunta === "I";
+  const conError = Boolean(errors.respuestas?.[Number(pregunta.codigo)]);
 
-  const claseFila = esInspeccion
-    ? "flex-row items-center border-b border-gray-300 gap-3 py-4"
-    : "gap-3 py-4";
+  const claseFila = cx(
+    "mb-3 rounded-2xl border bg-app-surface px-4 py-4",
+    conError ? "border-app-danger" : "border-app-border",
+    esInspeccion ? "flex-row items-center gap-x-3" : "gap-y-3",
+  );
 
   const claseLabel = esInspeccion
-    ? "flex-[4] flex-row items-center gap-3"
-    : "flex-row items-center gap-3";
+    ? "flex-[3] flex-row items-start gap-x-2"
+    : "flex-row items-start gap-x-2";
 
-  const claseInput =
-    "py-5 bg-white rounded-md px-3 font-semibold text-lg border border-[#D0D0D0]" +
-    (esInspeccion ? " flex-1" : "");
+  const claseInput = cx(
+    "rounded-xl border bg-app-surfaceAlt px-4 py-4 text-base font-semibold text-app-textMain",
+    conError ? "border-app-danger" : "border-app-border",
+    esInspeccion ? "flex-[2]" : "",
+  );
 
-  // Definido como elemento y no como componente anidado: si fuera un componente
-  // creado dentro del render, React lo desmontaria y remontaria en cada tecla.
+  const MarcaObligatorio = pregunta.obligatorio ? (
+    <View className="mt-1 h-2 w-2 rounded-full bg-app-danger" />
+  ) : null;
+
   const PreguntaTitulo = (
-    <ThemedText className={esInspeccion ? "flex-1" : ""} type="form-text">
+    <ThemedText
+      className={cx("text-app-textMain", esInspeccion ? "flex-1" : "")}
+      type="form-text"
+    >
       {pregunta.descripcion}
     </ThemedText>
+  );
+
+  const Etiqueta = (
+    <View className={claseLabel}>
+      {PreguntaTitulo}
+      {MarcaObligatorio}
+    </View>
   );
 
   useEffect(() => {
@@ -194,18 +214,11 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
     };
   }, []);
 
-  console.log("obligatorio ", pregunta.obligatorio);
-
   switch (pregunta.tipoCampo) {
     case "V":
       return (
         <View className={claseFila}>
-          <View className={claseLabel}>
-            {PreguntaTitulo}
-            {pregunta.obligatorio && (
-              <ExclamationIcon className="text-red-500" size={20} />
-            )}
-          </View>
+          {Etiqueta}
 
           <Controller
             control={control}
@@ -225,6 +238,8 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
             render={({ field: { value, onChange } }) => (
               <TextInput
                 className={claseInput}
+                placeholder="Escriba aqui"
+                placeholderTextColor={palette.textMuted}
                 value={typeof value === "string" ? value.toString() : ""}
                 onChangeText={onChange}
               />
@@ -232,15 +247,12 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
           />
         </View>
       );
+
     case "C":
       return (
         <View className={claseFila}>
-          <View className={claseLabel}>
-            {PreguntaTitulo}
-            {pregunta.obligatorio && (
-              <ExclamationIcon className="text-red-500" size={20} />
-            )}
-          </View>
+          {Etiqueta}
+
           <Controller
             control={control}
             name={`respuestas.${Number(pregunta.codigo)}.codPregunta`}
@@ -249,24 +261,45 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
               <TextInput className={"hidden"} value={value} />
             )}
           />
-          <View
-            className={`items-center justify-center w-24${esInspeccion ? " flex-1" : ""}`}
-          >
-            <Controller
-              control={control}
-              name={`respuestas.${Number(pregunta.codigo)}.respuesta`}
-              defaultValue={false}
-              render={({ field: { value, onChange } }) => (
-                <Checkbox
-                  status={value ? "checked" : "unchecked"}
-                  onPress={() => onChange(!value)}
-                  size={30}
-                />
-              )}
-            />
-          </View>
+
+          <Controller
+            control={control}
+            name={`respuestas.${Number(pregunta.codigo)}.respuesta`}
+            defaultValue={false}
+            render={({ field: { value, onChange } }) => (
+              <Pressable
+                onPress={() => onChange(!value)}
+                className={cx(
+                  "flex-row items-center justify-center gap-x-2 rounded-xl border px-4 py-3 active:opacity-70",
+                  value
+                    ? "border-app-success bg-app-successSoft"
+                    : "border-app-border bg-app-surfaceAlt",
+                  esInspeccion ? "flex-[2]" : "self-start",
+                )}
+              >
+                <View pointerEvents="none">
+                  <Checkbox
+                    status={value ? "checked" : "unchecked"}
+                    size={28}
+                    color={palette.success}
+                    uncheckedColor={palette.textMuted}
+                  />
+                </View>
+                <ThemedText
+                  type="semi-bold"
+                  className={cx(
+                    "uppercase",
+                    value ? "text-app-success" : "text-app-textSecond",
+                  )}
+                >
+                  {value ? "Conforme" : "Marcar"}
+                </ThemedText>
+              </Pressable>
+            )}
+          />
         </View>
       );
+
     case "B":
       return (
         <View className="relative">
@@ -311,6 +344,27 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
                 <View style={{ flex: 1, backgroundColor: "black" }} />
               )}
 
+              <View
+                style={{
+                  position: "absolute",
+                  top: 28,
+                  alignSelf: "center",
+                  maxWidth: "85%",
+                  backgroundColor: "rgba(0,0,0,0.55)",
+                  paddingHorizontal: 16,
+                  paddingVertical: 8,
+                  borderRadius: 999,
+                }}
+              >
+                <ThemedText
+                  type="caption"
+                  className="text-center uppercase text-white"
+                  numberOfLines={2}
+                >
+                  {pregunta.descripcion}
+                </ThemedText>
+              </View>
+
               {/* BOTONES */}
               <View
                 style={{
@@ -326,12 +380,12 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
                 <Pressable
                   onPress={closeCamera}
                   style={{
-                    backgroundColor: "red",
+                    backgroundColor: palette.danger,
                     padding: 18,
                     borderRadius: 100,
                   }}
                 >
-                  <CloseIcon />
+                  <CloseIcon size={26} color={palette.onPrimary} />
                 </Pressable>
 
                 {/* TOMAR FOTO */}
@@ -347,6 +401,8 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
                         width: 80,
                         height: 80,
                         borderRadius: 100,
+                        borderWidth: 5,
+                        borderColor: "rgba(255,255,255,0.45)",
                         opacity: cameraReady ? 1 : 0.5,
                       }}
                     />
@@ -357,12 +413,7 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
           </Modal>
 
           <View className={claseFila}>
-            <View className={claseLabel}>
-              {PreguntaTitulo}
-              {pregunta.obligatorio && (
-                <ExclamationIcon className="text-red-500" size={20} />
-              )}
-            </View>
+            {Etiqueta}
 
             <Controller
               control={control}
@@ -386,22 +437,44 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
                 value.mimeType?.includes("image") ? (
                   <Pressable
                     onPress={() => deleteImage(onChange)}
-                    className={`flex-row items-center gap-x-5${esInspeccion ? " flex-1" : ""}`}
+                    className={cx(
+                      "relative overflow-hidden rounded-xl border border-app-border active:opacity-70",
+                      esInspeccion ? "flex-[2]" : "self-start",
+                    )}
                   >
                     <Image
                       source={{ uri: value.uri }}
-                      style={{ width: 180, height: 120, borderRadius: 6 }}
+                      style={{ width: "100%", height: 130, minWidth: 160 }}
                     />
+                    <View
+                      style={{
+                        position: "absolute",
+                        right: 8,
+                        top: 8,
+                        backgroundColor: palette.danger,
+                        borderRadius: 999,
+                        padding: 7,
+                      }}
+                    >
+                      <TrashIcon size={18} color={palette.onPrimary} />
+                    </View>
                   </Pressable>
                 ) : (
                   <Pressable
                     onPress={() => takePhoto(onChange)}
-                    className={
-                      "bg-light-primary dark:bg-dark-primary p-2 rounded-lg justify-center items-center" +
-                      (esInspeccion ? " flex-1" : "")
-                    }
+                    style={elevation(1)}
+                    className={cx(
+                      "flex-row items-center justify-center gap-x-2 rounded-xl bg-app-primary px-4 py-4 active:opacity-75",
+                      esInspeccion ? "flex-[2]" : "self-start",
+                    )}
                   >
-                    <CameraIcon />
+                    <CameraIcon size={24} color={palette.onPrimary} />
+                    <ThemedText
+                      type="semi-bold"
+                      className="uppercase text-white"
+                    >
+                      Tomar foto
+                    </ThemedText>
                   </Pressable>
                 )
               }
@@ -409,15 +482,12 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
           </View>
         </View>
       );
+
     case "N":
       return (
         <View className={claseFila}>
-          <View className={claseLabel}>
-            {PreguntaTitulo}
-            {pregunta.obligatorio && (
-              <ExclamationIcon className="text-red-500" size={20} />
-            )}
-          </View>
+          {Etiqueta}
+
           <Controller
             control={control}
             name={`respuestas.${Number(pregunta.codigo)}.codPregunta`}
@@ -426,6 +496,7 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
               <TextInput className={"hidden"} value={value} />
             )}
           />
+
           <Controller
             control={control}
             name={`respuestas.${Number(pregunta.codigo)}.respuesta`}
@@ -434,6 +505,8 @@ const CustomField = ({ pregunta, control, index, errors }: Props) => {
               <TextInput
                 className={claseInput}
                 inputMode="decimal"
+                placeholder="0"
+                placeholderTextColor={palette.textMuted}
                 value={
                   value !== null && value !== undefined ? value.toString() : ""
                 }

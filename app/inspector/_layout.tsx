@@ -1,15 +1,11 @@
 import { ArrowLeftIcon } from "@/constants/Icons";
-import { useColorScheme } from "@/hooks/useColorScheme";
-import { useThemeColor } from "@/hooks/useThemeColor";
+import { palette } from "@/constants/Colors";
 import UserNavbar from "@/presentation/components/menu/UserNavbar";
-import { Stack, useNavigation, useRouter } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import React from "react";
+import { Pressable } from "react-native";
 
 const InspectorLayout = () => {
-  const colorScheme = useColorScheme();
-  const navColor = useThemeColor({}, "navbar");
-
-  const navigation = useNavigation();
   const router = useRouter();
 
   const onHeaderLeftClick = () => {
@@ -20,22 +16,29 @@ const InspectorLayout = () => {
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: navColor },
+        headerStyle: { backgroundColor: palette.navbar },
+        headerTintColor: palette.onPrimary,
         headerTitleStyle: {
-          //textTransform: "uppercase",
-          fontWeight: "bold",
+          fontWeight: "800",
+          fontSize: 18,
+          color: palette.onPrimary,
         },
         headerShadowVisible: false,
-        headerLeft: ({ tintColor, canGoBack }) =>
-          canGoBack && (
-            <ArrowLeftIcon
-              color={tintColor}
-              className={"mr-5"}
+        contentStyle: { backgroundColor: palette.background },
+        headerLeft: ({ canGoBack }) =>
+          canGoBack ? (
+            <Pressable
               onPress={onHeaderLeftClick}
-              size={30}
-            />
-          ),
-        headerRight: ({ tintColor, canGoBack }) => <UserNavbar />,
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="Volver"
+              className="mr-4 rounded-full p-1.5 active:opacity-60"
+              style={{ backgroundColor: "rgba(255,255,255,0.14)" }}
+            >
+              <ArrowLeftIcon color={palette.onPrimary} size={24} />
+            </Pressable>
+          ) : null,
+        headerRight: () => <UserNavbar />,
       }}
     >
       <Stack.Screen

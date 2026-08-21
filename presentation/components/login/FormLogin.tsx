@@ -1,16 +1,25 @@
 import React, { useState } from "react";
-import { View, TextInput } from "react-native";
-import { Checkbox } from "@futurejj/react-native-checkbox";
+import { Pressable, TextInput, View } from "react-native";
+import { Controller, useForm } from "react-hook-form";
+import { Href, router } from "expo-router";
+
+import { palette } from "@/constants/Colors";
+import { cx, elevation } from "@/constants/Theme";
+import {
+  BadgeIcon,
+  EyeIcon,
+  EyeOffIcon,
+  LockIcon,
+  LoginIcon,
+  SpinnerIcon,
+} from "@/constants/Icons";
+import { IniciarSesion } from "@/core/services/Auth.service";
+import { useAuthContext } from "@/core/stores/AuthContext.store";
+import { LoginForm } from "@/infraestructure/interfaces/formularios.interface";
+import { Auth } from "@/infraestructure/interfaces/main.interface";
+import ErrorValid from "@/presentation/shared/ErrorValid";
 import ThemedButton from "@/presentation/shared/ThemedButton";
 import ThemedText from "@/presentation/shared/ThemedText";
-import { useForm, Controller } from "react-hook-form";
-import { LoginForm } from "@/infraestructure/interfaces/formularios.interface";
-import { SpinnerIcon } from "@/constants/Icons";
-import { IniciarSesion } from "@/core/services/Auth.service";
-import { Href, router } from "expo-router";
-import { Auth } from "@/infraestructure/interfaces/main.interface";
-import { useAuthContext } from "@/core/stores/AuthContext.store";
-import ErrorValid from "@/presentation/shared/ErrorValid";
 
 const FormLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -34,108 +43,143 @@ const FormLogin = () => {
   const onLogin = async (datos: LoginForm) => {
     setLoading(true);
 
-    const peticion = await IniciarSesion(datos);
+    try {
+      const peticion = await IniciarSesion(datos);
 
-    if ("error" in peticion) {
-      setErrorLogin(peticion.error);
+      if ("error" in peticion) {
+        setErrorLogin(peticion.error);
+        return;
+      }
+
+      const dataUsuario = peticion as Auth;
+      logIn(dataUsuario);
+
+      setErrorLogin("");
+
+      let ruta = "/inspector";
+
+      router.replace(ruta as Href);
+
+      reset();
+    } catch (error: any) {
+      console.log("ERROR AL INICIAR SESION:", error);
+      setErrorLogin(error?.message ?? "No se pudo iniciar sesion");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const dataUsuario = peticion as Auth;
-    logIn(dataUsuario);
-
-    setErrorLogin("");
-
-    let ruta = "/inspector";
-
-    router.replace(ruta as Href);
-
-    setLoading(false);
-    reset();
   };
+
+  const campoBase =
+    "flex-row items-center gap-x-3 rounded-xl border bg-app-surfaceAlt px-4";
 
   return (
     <View
-      className={
-        " bg-gray-200 dark:bg-gray-600 border-light-background dark:border-dark-background w-4/5 lg:w-2/3 px-5" +
-          " lg:px-10" +
-          " py-5 lg:py-14" +
-        " rounded-2xl" +
-        " gap-y-4"
-      }
+      className="gap-y-5 rounded-3xl border border-app-border bg-app-surface p-6"
+      style={elevation(2)}
     >
-      <ThemedText
-        type={"h1"}
-        className={
-          "text-center text-light-primary dark:text-dark-primary px-3"
-        }
-      >
-        Inspeccion Vehicular
-      </ThemedText>
+      <View className="gap-y-1">
+        <ThemedText type="h2" className="text-app-textMain">
+          Iniciar sesion
+        </ThemedText>
+        <ThemedText type="caption" className="text-app-textSecond">
+          Ingrese sus credenciales de inspector
+        </ThemedText>
+      </View>
 
-      <Controller
-        control={control}
-        name={"usuario"}
-        rules={{
-          required: "El usuario es obligatorio",
-        }}
-        render={({ field: { onChange, value } }) => (
-          <TextInput
-            className={
-              " text-sm md:text-base lg:text-lg py-3 lg:py-5 px-3 border-b border-light-background" +
-                " text-light-textMain" +
-              " dark:text-dark-textMain w-full placeholder:text-gray-300 rounded-xl"
-            }
-            placeholder={"Usuario"}
-            maxLength={6}
-            autoCapitalize={"none"}
-            onChangeText={onChange}
-            value={value}
-          />
-        )}
-      />
-
-      <Controller
-        control={control}
-        name={"clave"}
-        render={({ field: { onChange, value } }) => (
-          <TextInput
-            className={
-              "text-sm md:text-base lg:text-lg py-3 lg:py-5 px-3 border-b border-light-background text-light-textMain" +
-              " dark:text-dark-textMain w-full placeholder:text-gray-300 rounded-xl"
-            }
-            placeholder={"contraseña"}
-            secureTextEntry={!showPassword}
-            autoCapitalize={"none"}
-            onChangeText={onChange}
-            value={value}
-          />
-        )}
-      />
-
-      <View className={"flex-row gap-x-2 items-center"}>
-        <Checkbox
-          status={showPassword ? "checked" : "unchecked"}
-          onPress={() => setShowPassword(!showPassword)}
-          size={30}
+      <View className="gap-y-2">
+        <ThemedText type="label" className="text-app-textSecond">
+          Usuario
+        </ThemedText>
+        <Controller
+          control={control}
+          name={"usuario"}
+          rules={{
+            required: "El usuario es obligatorio",
+          }}
+          render={({ field: { onChange, value } }) => (
+            <View
+              className={cx(
+                campoBase,
+                errors.usuario ? "border-app-danger" : "border-app-border",
+              )}
+            >
+              <BadgeIcon size={22} />
+              <TextInput
+                className="flex-1 py-4 text-base font-semibold text-app-textMain"
+                placeholder="Codigo de usuario"
+                placeholderTextColor={palette.textMuted}
+                maxLength={6}
+                autoCapitalize={"none"}
+                onChangeText={onChange}
+                value={value}
+              />
+            </View>
+          )}
         />
-        <ThemedText type={"semi-bold"}>Mostrar contraseña</ThemedText>
+      </View>
+
+      <View className="gap-y-2">
+        <ThemedText type="label" className="text-app-textSecond">
+          Contrasena
+        </ThemedText>
+        <Controller
+          control={control}
+          name={"clave"}
+          render={({ field: { onChange, value } }) => (
+            <View className={cx(campoBase, "border-app-border")}>
+              <LockIcon size={22} />
+              <TextInput
+                className="flex-1 py-4 text-base font-semibold text-app-textMain"
+                placeholder="••••••"
+                placeholderTextColor={palette.textMuted}
+                secureTextEntry={!showPassword}
+                autoCapitalize={"none"}
+                onChangeText={onChange}
+                value={value}
+              />
+              <Pressable
+                onPress={() => setShowPassword(!showPassword)}
+                hitSlop={12}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  showPassword ? "Ocultar contrasena" : "Mostrar contrasena"
+                }
+                className="p-1 active:opacity-60"
+              >
+                {showPassword ? (
+                  <EyeOffIcon size={24} />
+                ) : (
+                  <EyeIcon size={24} />
+                )}
+              </Pressable>
+            </View>
+          )}
+        />
       </View>
 
       <ThemedButton
-        className={"uppercase bg-blue-500 dark:bg-blue-500 py-5"}
+        size="lg"
+        block
+        variant="primary"
+        disabled={loading}
         onPress={handleSubmit(onLogin)}
+        icon={
+          loading ? (
+            <SpinnerIcon size={22} />
+          ) : (
+            <LoginIcon size={22} color={palette.onPrimary} />
+          )
+        }
       >
-        {loading ? <SpinnerIcon size={20} /> : <> INGRESAR</>}
+        {loading ? "Ingresando..." : "Ingresar"}
       </ThemedButton>
 
-        {errors.usuario && (
-            <ErrorValid
-                message={errors.usuario.message ? errors.usuario.message : ""}
-            />
-        )}
-        {errorLogin !== "" && <ErrorValid message={errorLogin.toUpperCase()} />}
+      {errors.usuario && (
+        <ErrorValid
+          message={errors.usuario.message ? errors.usuario.message : ""}
+        />
+      )}
+      {errorLogin !== "" && <ErrorValid message={errorLogin.toUpperCase()} />}
     </View>
   );
 };

@@ -1,7 +1,7 @@
 import React from "react";
 import { View, ViewProps } from "react-native";
-import { useThemeColor } from "@/hooks/useThemeColor";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { palette } from "@/constants/Colors";
 
 interface Props extends ViewProps {
   safep?: boolean;
@@ -17,22 +17,26 @@ const ThemedView = ({
   safep = false,
   margin = false,
   bgColor,
+  style,
   children,
+  ...rest
 }: Props) => {
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const backgroundColor = bgColor ?? useThemeColor({}, "background");
   const safeArea = useSafeAreaInsets();
 
   return (
     <View
-      style={{
-        backgroundColor: backgroundColor,
-        flex: 1,
-        paddingTop: safep ? safeArea.top : 0,
-        paddingBottom: safeb ? safeArea.bottom : 0,
-        marginHorizontal: margin ? 10 : 0,
-      }}
+      style={[
+        {
+          backgroundColor: bgColor ?? palette.background,
+          flex: 1,
+          paddingTop: safep ? safeArea.top : 0,
+          paddingBottom: safeb ? safeArea.bottom : 0,
+          marginHorizontal: margin ? 10 : 0,
+        },
+        style,
+      ]}
       className={className}
+      {...rest}
     >
       {children}
     </View>

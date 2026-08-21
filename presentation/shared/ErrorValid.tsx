@@ -1,5 +1,8 @@
 import React from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import { AlertIcon } from "@/constants/Icons";
+import { palette } from "@/constants/Colors";
+import ThemedText from "@/presentation/shared/ThemedText";
 
 interface Props {
   message: string;
@@ -7,10 +10,14 @@ interface Props {
 
 const ErrorValid = ({ message }: Props) => {
   return (
-    <View className="py-3 bg-red-700 w-full">
-      <Text className="text-white text-center text-xl">
-        {message.toUpperCase()}
-      </Text>
+    <View className="w-full flex-row items-center gap-x-3 rounded-xl border border-app-danger bg-app-dangerSoft px-4 py-3">
+      <AlertIcon size={22} color={palette.danger} />
+      <ThemedText
+        type="semi-bold"
+        className="flex-1 text-app-danger uppercase"
+      >
+        {message}
+      </ThemedText>
     </View>
   );
 };
