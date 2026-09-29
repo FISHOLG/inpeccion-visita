@@ -1,12 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
-import { ListarVehiculos } from "@/core/services/Vehiculos.service";
 import { obtenerPreguntas } from "@/core/services/Inspeccion.service";
+
+export const clavePreguntas = (codUnidad: string) =>
+  ["inspeccion", codUnidad] as const;
 
 export const useDataInspeccion = (codUnidad: string) => {
   const ListPreguntas = useQuery({
-    queryKey: ["inspeccion", codUnidad],
+    queryKey: clavePreguntas(codUnidad),
     queryFn: () => obtenerPreguntas(codUnidad),
-    staleTime: 1000 * 60 * 60 * 24, //24H
+    enabled: !!codUnidad,
+    staleTime: 1000 * 60 * 60 * 24,
+    gcTime: 1000 * 60 * 60 * 24,
   });
 
   return {

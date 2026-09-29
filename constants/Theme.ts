@@ -20,9 +20,7 @@ export const spacing = {
   xxl: 32,
 };
 
-export const elevation = (level: 0 | 1 | 2 | 3 = 1) => {
-  if (level === 0) return {};
-
+const buildElevation = (level: 1 | 2 | 3) => {
   const map = {
     1: { radius: 4, opacity: 0.1, offset: 2 },
     2: { radius: 10, opacity: 0.14, offset: 4 },
@@ -41,6 +39,15 @@ export const elevation = (level: 0 | 1 | 2 | 3 = 1) => {
     },
   });
 };
+
+const ELEVATIONS = {
+  0: undefined,
+  1: buildElevation(1),
+  2: buildElevation(2),
+  3: buildElevation(3),
+} as const;
+
+export const elevation = (level: 0 | 1 | 2 | 3 = 1) => ELEVATIONS[level];
 
 export const cx = (...parts: (string | false | null | undefined)[]) =>
   parts.filter(Boolean).join(" ");

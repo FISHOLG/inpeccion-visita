@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect, useMemo } from "react";
 import { ScrollView, View } from "react-native";
+import { useQueryClient } from "@tanstack/react-query";
 import { palette } from "@/constants/Colors";
 import {
   BookSearchIcon,
@@ -9,41 +10,53 @@ import {
 } from "@/constants/Icons";
 import { useAuthContext } from "@/core/stores/AuthContext.store";
 import ButtonOption from "@/presentation/components/menu/ButtonOption";
+import { prefetchVehiculos } from "@/presentation/hooks/useVehiculos";
+import { prefetchVehiculosVisita } from "@/presentation/hooks/useVehiculosVisita";
 import ThemedText from "@/presentation/shared/ThemedText";
 import ThemedView from "@/presentation/shared/ThemedView";
 
-const index = () => {
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const { auth } = useAuthContext();
+const CONTENIDO = { paddingHorizontal: 16, paddingBottom: 28 };
 
-  const opciones = [
-    {
-      name: "Inspecciones Pendientes",
-      detalle: "Unidades en visita por revisar",
-      color: palette.primary,
-      icon: <ShieldCheckIcon size={34} color={palette.onPrimary} />,
-      ruta: "/inspector/visita",
-    },
-    {
-      name: "Ingreso Vehicular",
-      detalle: "Registrar unidad que entra a planta",
-      color: palette.success,
-      icon: <CarLeftIcon size={34} color={palette.onPrimary} />,
-      ruta: "/inspector/vehicular/vehicularI",
-    },
-    {
-      name: "Salida Vehicular",
-      detalle: "Registrar unidad que sale de planta",
-      color: palette.danger,
-      icon: <CarRightIcon size={34} color={palette.onPrimary} />,
-      ruta: "/inspector/vehicular/vehicularS",
-    },
-  ];
+const InspectorIndex = () => {
+  const { auth } = useAuthContext();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    prefetchVehiculos(queryClient);
+    prefetchVehiculosVisita(queryClient);
+  }, [queryClient]);
+
+  const opciones = useMemo(
+    () => [
+      {
+        name: "Inspecciones Pendientes",
+        detalle: "Unidades en visita por revisar",
+        color: palette.primary,
+        icon: <ShieldCheckIcon size={34} color={palette.onPrimary} />,
+        ruta: "/inspector/visita",
+      },
+      {
+        name: "Ingreso Vehicular",
+        detalle: "Registrar unidad que entra a planta",
+        color: palette.success,
+        icon: <CarLeftIcon size={34} color={palette.onPrimary} />,
+        ruta: "/inspector/vehicular/vehicularI",
+      },
+      {
+        name: "Salida Vehicular",
+        detalle: "Registrar unidad que sale de planta",
+        color: palette.danger,
+        icon: <CarRightIcon size={34} color={palette.onPrimary} />,
+        ruta: "/inspector/vehicular/vehicularS",
+      },
+    ],
+    [],
+  );
 
   return (
     <ThemedView safeb>
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 28 }}
+        contentContainerStyle={CONTENIDO}
         showsVerticalScrollIndicator={false}
       >
         <View className="flex-row items-center gap-x-3 py-5">
@@ -54,7 +67,11 @@ const index = () => {
             <ThemedText type="label" className="text-app-textMuted">
               Panel del inspector
             </ThemedText>
-            <ThemedText type="h3" className="text-app-textMain" numberOfLines={1}>
+            <ThemedText
+              type="h3"
+              className="text-app-textMain"
+              numberOfLines={1}
+            >
               {auth?.nombrUsr ?? "Inspector"}
             </ThemedText>
           </View>
@@ -67,9 +84,9 @@ const index = () => {
         </ThemedText>
 
         <View className="gap-y-4">
-          {opciones.map((opcion, i) => (
+          {opciones.map((opcion) => (
             <ButtonOption
-              key={i}
+              key={opcion.ruta}
               title={opcion.name}
               subtitle={opcion.detalle}
               icon={opcion.icon}
@@ -83,4 +100,4 @@ const index = () => {
   );
 };
 
-export default index;
+export default InspectorIndex;

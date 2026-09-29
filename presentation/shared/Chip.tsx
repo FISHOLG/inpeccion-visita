@@ -13,20 +13,29 @@ interface Props {
 const Chip = ({ label, tone = "neutral", icon, className }: Props) => {
   const styles = chipTone[tone];
 
-  return (
-    <View
-      className={cx(
+  const claseContenedor = React.useMemo(
+    () =>
+      cx(
         "flex-row items-center gap-x-1.5 self-start rounded-full px-3 py-1",
         styles.bg,
         className,
-      )}
-    >
+      ),
+    [styles.bg, className],
+  );
+
+  const claseTexto = React.useMemo(
+    () => cx("uppercase", styles.text),
+    [styles.text],
+  );
+
+  return (
+    <View className={claseContenedor}>
       {icon}
-      <ThemedText type="caption" className={cx("uppercase", styles.text)}>
+      <ThemedText type="caption" className={claseTexto}>
         {label}
       </ThemedText>
     </View>
   );
 };
 
-export default Chip;
+export default React.memo(Chip);

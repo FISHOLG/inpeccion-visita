@@ -1,11 +1,7 @@
 import React from "react";
 import { View } from "react-native";
 import { palette } from "@/constants/Colors";
-import {
-  CarLeftIcon,
-  CarRightIcon,
-  ChevronRightIcon,
-} from "@/constants/Icons";
+import { CarLeftIcon, CarRightIcon, ChevronRightIcon } from "@/constants/Icons";
 import { Vehiculo } from "@/infraestructure/interfaces/main.interface";
 import Card from "@/presentation/shared/Card";
 import Chip from "@/presentation/shared/Chip";
@@ -19,7 +15,6 @@ interface Props {
 
 const CardVehiculo = ({ vehiculo, seleccionarVehiculo, tipoInsp }: Props) => {
   const pendienteSalida = vehiculo.tipoUltInsp === "I";
-
   const habilitado = vehiculo.tipoUltInsp !== tipoInsp;
 
   const acento = !habilitado
@@ -29,23 +24,33 @@ const CardVehiculo = ({ vehiculo, seleccionarVehiculo, tipoInsp }: Props) => {
       : palette.primary;
 
   const fondo = !habilitado
-    ? "bg-app-surfaceAlt"
+    ? "mb-4 bg-app-surfaceAlt"
     : pendienteSalida
-      ? "bg-app-accentSoft"
-      : "";
+      ? "mb-4 bg-app-accentSoft"
+      : "mb-4";
+
+  const onPress = React.useCallback(
+    () => seleccionarVehiculo(vehiculo),
+    [seleccionarVehiculo, vehiculo],
+  );
+
+  const estiloIcono = React.useMemo(
+    () => ({ backgroundColor: acento }),
+    [acento],
+  );
 
   return (
     <Card
-      onPress={() => seleccionarVehiculo(vehiculo)}
+      onPress={onPress}
       disabled={!habilitado}
       accentColor={acento}
       level={habilitado ? 2 : 0}
-      className={`mb-4 ${fondo}`}
+      className={fondo}
     >
       <View className="flex-row items-center gap-x-4 px-4 py-4">
         <View
           className="h-14 w-14 items-center justify-center rounded-2xl"
-          style={{ backgroundColor: acento }}
+          style={estiloIcono}
         >
           {pendienteSalida ? (
             <CarRightIcon size={28} color={palette.onPrimary} />
@@ -82,4 +87,4 @@ const CardVehiculo = ({ vehiculo, seleccionarVehiculo, tipoInsp }: Props) => {
   );
 };
 
-export default CardVehiculo;
+export default React.memo(CardVehiculo);

@@ -18,21 +18,32 @@ interface Props {
   seleccionarVehiculo: (data: VehiculosVisita) => void;
 }
 
-const Placa = ({ valor }: { valor: string }) => (
+const Placa = React.memo(({ valor }: { valor: string }) => (
   <View className="rounded-md border-2 border-app-textMain bg-white px-3 py-1">
     <ThemedText type="plate" className="text-app-textMain">
       {valor}
     </ThemedText>
   </View>
-);
+));
+Placa.displayName = "Placa";
 
 const CardVisita = ({ vehiculo, seleccionarVehiculo }: Props) => {
   const esIngreso = vehiculo.tipoInspeccion === "I";
   const acento = esIngreso ? palette.success : palette.danger;
 
+  const onPress = React.useCallback(
+    () => seleccionarVehiculo(vehiculo),
+    [seleccionarVehiculo, vehiculo],
+  );
+
+  const estiloIcono = React.useMemo(
+    () => ({ backgroundColor: acento }),
+    [acento],
+  );
+
   return (
     <Card
-      onPress={() => seleccionarVehiculo(vehiculo)}
+      onPress={onPress}
       accentColor={acento}
       level={2}
       className="mb-4 flex-grow"
@@ -41,7 +52,7 @@ const CardVisita = ({ vehiculo, seleccionarVehiculo }: Props) => {
         <View className="flex-row items-center gap-x-2">
           <View
             className="h-11 w-11 items-center justify-center rounded-xl"
-            style={{ backgroundColor: acento }}
+            style={estiloIcono}
           >
             {esIngreso ? (
               <CarLeftIcon size={24} color={palette.onPrimary} />
@@ -95,4 +106,4 @@ const CardVisita = ({ vehiculo, seleccionarVehiculo }: Props) => {
   );
 };
 
-export default CardVisita;
+export default React.memo(CardVisita);

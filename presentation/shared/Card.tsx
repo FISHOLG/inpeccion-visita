@@ -21,16 +21,30 @@ const Card = ({
   children,
   ...rest
 }: Props) => {
-  const base = cx(
-    "overflow-hidden rounded-2xl border border-app-border bg-app-surface",
-    onPress && !disabled && "active:opacity-75",
-    disabled && "opacity-60",
-    className,
+  const base = React.useMemo(
+    () =>
+      cx(
+        "overflow-hidden rounded-2xl border border-app-border bg-app-surface",
+        onPress && !disabled && "active:opacity-75",
+        disabled && "opacity-60",
+        className,
+      ),
+    [onPress, disabled, className],
   );
 
-  const content = accentColor ? (
+  const estilo = React.useMemo(
+    () => [elevation(level), style],
+    [level, style],
+  );
+
+  const estiloAcento = React.useMemo(
+    () => (accentColor ? { width: 6, backgroundColor: accentColor } : null),
+    [accentColor],
+  );
+
+  const content = estiloAcento ? (
     <View className="flex-row">
-      <View style={{ width: 6, backgroundColor: accentColor }} />
+      <View style={estiloAcento} />
       <View className="flex-1">{children}</View>
     </View>
   ) : (
@@ -42,7 +56,7 @@ const Card = ({
       <Pressable
         onPress={onPress}
         disabled={disabled}
-        style={[elevation(level), style]}
+        style={estilo}
         className={base}
         {...rest}
       >
@@ -52,10 +66,10 @@ const Card = ({
   }
 
   return (
-    <View style={[elevation(level), style]} className={base} {...rest}>
+    <View style={estilo} className={base} {...rest}>
       {content}
     </View>
   );
 };
 
-export default Card;
+export default React.memo(Card);

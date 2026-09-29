@@ -1,9 +1,9 @@
-import React from "react";
-import { View } from "react-native";
-import { Href, router } from "expo-router";
 import { ChevronRightIcon } from "@/constants/Icons";
 import Card from "@/presentation/shared/Card";
 import ThemedText from "@/presentation/shared/ThemedText";
+import { Href, router } from "expo-router";
+import React from "react";
+import { View } from "react-native";
 
 interface Props {
   title: string;
@@ -14,9 +14,9 @@ interface Props {
 }
 
 const ButtonOption = ({ title, subtitle, icon, color, ruta }: Props) => {
-  const navegar = () => {
+  const navegar = React.useCallback(() => {
     router.push(ruta as Href);
-  };
+  }, [ruta]);
 
   return (
     <Card onPress={navegar} accentColor={color} level={2}>
@@ -45,4 +45,4 @@ const ButtonOption = ({ title, subtitle, icon, color, ruta }: Props) => {
   );
 };
 
-export default ButtonOption;
+export default React.memo(ButtonOption);

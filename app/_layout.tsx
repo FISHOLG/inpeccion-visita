@@ -14,6 +14,18 @@ import { palette } from "@/constants/Colors";
 import { AuthProvider } from "@/core/stores/AuthContext.store";
 import ToastManager from "toastify-react-native";
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 60 * 24,
+      retry: 1,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+    },
+  },
+});
+
 const AppNavTheme = {
   ...DefaultTheme,
   colors: {
@@ -37,7 +49,6 @@ export default function RootLayout() {
     return null;
   }*/
 
-  const queryClient = new QueryClient();
 
   useEffect(() => {
     async function checkUpdate() {

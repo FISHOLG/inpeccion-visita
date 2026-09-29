@@ -33,23 +33,40 @@ const variants: Record<TextOptions, string> = {
   plate: "text-xl lg:text-2xl font-extrabold tracking-[2px] uppercase",
 };
 
-const ThemedText = ({ className, type = "normal", children, ...rest }: Props) => {
+const cacheClases = new Map<string, string>();
+
+const resolverClases = (type: TextOptions, className?: string) => {
+  const llave = `${type}|${className ?? ""}`;
+  const guardada = cacheClases.get(llave);
+  if (guardada !== undefined) return guardada;
+
+  const yaTieneColor =
+    !!className &&
+    (className.includes("text-app-") || className.includes("text-white"));
+
+  const resultado = [
+    variants[type] ?? variants.normal,
+    yaTieneColor ? null : "text-app-textMain",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  cacheClases.set(llave, resultado);
+  return resultado;
+};
+
+const ThemedText = ({
+  className,
+  type = "normal",
+  children,
+  ...rest
+}: Props) => {
   return (
-    <Text
-      className={[
-        variants[type] ?? variants.normal,
-        !className?.includes("text-app-") &&
-          !className?.includes("text-white") &&
-          "text-app-textMain",
-        className,
-      ]
-        .filter(Boolean)
-        .join(" ")}
-      {...rest}
-    >
+    <Text className={resolverClases(type, className)} {...rest}>
       {children}
     </Text>
   );
 };
 
-export default ThemedText;
+export default React.memo(ThemedText);

@@ -1,45 +1,76 @@
-import React, { useEffect, useState } from "react";
-import { FlatList, View } from "react-native";
-import { ListarVehiculosVisita } from "@/core/services/Vehiculos.service";
+import React, { useCallback, useState } from "react";
+import { FlatList, ListRenderItemInfo, View } from "react-native";
 import { useScreenOrientation } from "@/hooks/useScreenOrientation";
 import { VehiculosVisita } from "@/infraestructure/interfaces/main.interface";
 import { palette } from "@/constants/Colors";
 import { ClipboardListIcon, ReloadIcon } from "@/constants/Icons";
 import FormInspeccion from "@/presentation/components/inspeccion/FormInspeccion";
 import CardVisita from "@/presentation/components/visita/CardVisita";
+import { useVehiculosVisita } from "@/presentation/hooks/useVehiculosVisita";
 import EmptyState from "@/presentation/shared/EmptyState";
+import Loader from "@/presentation/shared/Loader";
 import ThemedText from "@/presentation/shared/ThemedText";
 
+const CONTENIDO = { padding: 14, paddingBottom: 24 };
+const COLUMNAS = { gap: 14 };
+const SIN_DATOS: VehiculosVisita[] = [];
+
+const VACIO = (
+  <EmptyState
+    title="No hay inspecciones pendientes"
+    description="Deslice hacia abajo para actualizar la lista"
+  />
+);
+
 const ListPendientes = () => {
-  const [vehiculosPendientes, setVehiculosPendientes] = useState<
-    VehiculosVisita[]
-  >([]);
-  const [refreshing, setRefreshing] = useState(false);
+  const { ListVehiculosVisita } = useVehiculosVisita();
+  const { refetch } = ListVehiculosVisita;
 
-  const orientation = useScreenOrientation();
-
-  const obtenerVehiculosPendientes = async () => {
-    setRefreshing(true);
-    const peticion = await ListarVehiculosVisita();
-    setVehiculosPendientes(peticion);
-    setRefreshing(false);
-  };
+  const vehiculosPendientes = ListVehiculosVisita.data ?? SIN_DATOS;
 
   const [selectedVehiculo, setSelectedVehiculo] =
     useState<VehiculosVisita | null>(null);
 
-  const seleccionarVehiculo = (vehiculo: VehiculosVisita) => {
+  const seleccionarVehiculo = useCallback((vehiculo: VehiculosVisita) => {
     setSelectedVehiculo(vehiculo);
-  };
+  }, []);
 
+  const orientation = useScreenOrientation();
   const isPortrait = orientation === "portrait";
   const numColumns = isPortrait ? 1 : 3;
 
-  useEffect(() => {
-    obtenerVehiculosPendientes();
-  }, []);
+  const renderItem = useCallback(
+    ({ item }: ListRenderItemInfo<VehiculosVisita>) => (
+      <CardVisita vehiculo={item} seleccionarVehiculo={seleccionarVehiculo} />
+    ),
+    [seleccionarVehiculo],
+  );
 
-  return !selectedVehiculo ? (
+  const keyExtractor = useCallback(
+    (item: VehiculosVisita) => `${item.codIngreso}-${item.itemIngreso}`,
+    [],
+  );
+
+  const refrescar = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
+  if (selectedVehiculo)
+    return (
+      <View className="flex-1">
+        <FormInspeccion
+          tipoIns={selectedVehiculo.tipoInspeccion}
+          tipoUnd={selectedVehiculo.codUnd}
+          codInsp={selectedVehiculo.codIngreso}
+          itemInsp={selectedVehiculo.itemIngreso}
+        />
+      </View>
+    );
+
+  if (ListVehiculosVisita.isLoading && vehiculosPendientes.length === 0)
+    return <Loader message="Cargando pendientes" />;
+
+  return (
     <>
       <View className="flex-row items-center gap-x-3 border-b border-app-border bg-app-surface px-4 py-4">
         <View className="h-11 w-11 items-center justify-center rounded-xl bg-app-primarySoft">
@@ -56,7 +87,7 @@ const ListPendientes = () => {
           </ThemedText>
         </View>
 
-        <ReloadIcon size={24} onPress={obtenerVehiculosPendientes} />
+        <ReloadIcon size={24} onPress={refrescar} />
       </View>
 
       <View className="flex-1">
@@ -64,36 +95,22 @@ const ListPendientes = () => {
           key={numColumns}
           data={vehiculosPendientes}
           numColumns={numColumns}
-          keyExtractor={(item, index) => index.toString()}
-          contentContainerStyle={{ padding: 14, paddingBottom: 24 }}
-          columnWrapperStyle={numColumns > 1 ? { gap: 14 } : undefined}
+          keyExtractor={keyExtractor}
+          contentContainerStyle={CONTENIDO}
+          columnWrapperStyle={numColumns > 1 ? COLUMNAS : undefined}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <CardVisita
-              vehiculo={item}
-              seleccionarVehiculo={seleccionarVehiculo}
-            />
-          )}
-          refreshing={refreshing}
-          onRefresh={obtenerVehiculosPendientes}
-          ListEmptyComponent={
-            <EmptyState
-              title="No hay inspecciones pendientes"
-              description="Deslice hacia abajo para actualizar la lista"
-            />
-          }
+          renderItem={renderItem}
+          initialNumToRender={6}
+          maxToRenderPerBatch={6}
+          updateCellsBatchingPeriod={50}
+          windowSize={7}
+          removeClippedSubviews
+          refreshing={ListVehiculosVisita.isFetching}
+          onRefresh={refrescar}
+          ListEmptyComponent={VACIO}
         />
       </View>
     </>
-  ) : (
-    <View className="flex-1">
-      <FormInspeccion
-        tipoIns={selectedVehiculo.tipoInspeccion}
-        tipoUnd={selectedVehiculo.codUnd}
-        codInsp={selectedVehiculo.codIngreso}
-        itemInsp={selectedVehiculo.itemIngreso}
-      />
-    </View>
   );
 };
 
