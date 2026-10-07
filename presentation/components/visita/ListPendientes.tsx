@@ -1,20 +1,19 @@
-import React, { useCallback, useState } from "react";
-import { FlatList, ListRenderItemInfo, View } from "react-native";
-import { useScreenOrientation } from "@/hooks/useScreenOrientation";
-import { VehiculosVisita } from "@/infraestructure/interfaces/main.interface";
 import { palette } from "@/constants/Colors";
 import { ClipboardListIcon, ReloadIcon } from "@/constants/Icons";
+import { useScreenOrientation } from "@/hooks/useScreenOrientation";
+import { VehiculosVisita } from "@/infraestructure/interfaces/main.interface";
 import FormInspeccion from "@/presentation/components/inspeccion/FormInspeccion";
 import CardVisita from "@/presentation/components/visita/CardVisita";
 import { useVehiculosVisita } from "@/presentation/hooks/useVehiculosVisita";
 import EmptyState from "@/presentation/shared/EmptyState";
 import Loader from "@/presentation/shared/Loader";
 import ThemedText from "@/presentation/shared/ThemedText";
+import React, { useCallback, useState } from "react";
+import { FlatList, ListRenderItemInfo, View } from "react-native";
 
 const CONTENIDO = { padding: 14, paddingBottom: 24 };
 const COLUMNAS = { gap: 14 };
 const SIN_DATOS: VehiculosVisita[] = [];
-
 const VACIO = (
   <EmptyState
     title="No hay inspecciones pendientes"
@@ -63,6 +62,8 @@ const ListPendientes = () => {
           tipoUnd={selectedVehiculo.codUnd}
           codInsp={selectedVehiculo.codIngreso}
           itemInsp={selectedVehiculo.itemIngreso}
+          dobleRevision={selectedVehiculo.dobleRevision}
+          codInspReabrir={selectedVehiculo.codInspIngreso}
         />
       </View>
     );

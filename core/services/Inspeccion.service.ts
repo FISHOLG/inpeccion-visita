@@ -1,6 +1,9 @@
 import { inspeccionApi } from "@/core/api/inspeccion-api";
+import {
+  DetalleFormInspeccion,
+  FormInspecc,
+} from "@/infraestructure/interfaces/main.interface";
 import { InspeccionMapper } from "@/infraestructure/mappers/inspeccion.mapper";
-import { FormInspecc } from "@/infraestructure/interfaces/main.interface";
 
 const url = "/inspeccion";
 
@@ -20,7 +23,35 @@ export const obtenerPreguntas = async (codUnidad: string) => {
   }
 };
 
-export const guardarInspeccion = async (datos: FormInspecc) => {
+export const obtenerRespuestasParciales = async (
+  codInspeccion: string,
+): Promise<DetalleFormInspeccion[]> => {
+  const peticion = await inspeccionApi.get(
+    `${url}/respuestas/${codInspeccion}`,
+  );
+
+  const { data } = peticion.data;
+
+  if (!Array.isArray(data)) throw new Error("RESPUESTA INVALIDA");
+
+  return data
+    .filter((item) => item.RESPUESTA !== null && item.RESPUESTA !== undefined)
+    .map((item) => ({
+      codPregunta: String(item.COD_INSPEC),
+      respuesta:
+        item.TIPO_CAMPO === "C"
+          ? item.RESPUESTA === "1"
+          : item.TIPO_CAMPO === "B"
+            ? {
+                uri: item.RESPUESTA.uri,
+                extension: item.RESPUESTA.extension,
+                mimeType: `image/${item.RESPUESTA.extension}`,
+              }
+            : String(item.RESPUESTA),
+    }));
+};
+
+export const guardarInspeccion =async (datos: FormInspecc) => {
   try {
     const peticion = await inspeccionApi.post(url, datos);
 

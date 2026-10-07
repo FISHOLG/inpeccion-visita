@@ -53,6 +53,7 @@ export interface FormInspecc {
   numPlaca?: string;
   codIngreso?: string;
   itemIngreso?: string;
+  parcial?: boolean;
 }
 
 export interface DetalleInspeccion extends DetalleFormInspeccion {
@@ -70,4 +71,7 @@ export interface VehiculosVisita {
   fechaIngreso: string;
   modelo: string;
   tipoInspeccion: string;
+  dobleRevision: boolean;
+  ingresoParcial: boolean;
+  codInspIngreso?: string;
 }

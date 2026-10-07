@@ -63,7 +63,15 @@ const CardVisita = ({ vehiculo, seleccionarVehiculo }: Props) => {
 
           <View className="flex-1">
             <Chip
-              label={esIngreso ? "Ingreso" : "Salida"}
+              label={
+                vehiculo.ingresoParcial
+                  ? "Ingreso · Revision interior"
+                  : vehiculo.dobleRevision
+                    ? "Ingreso · Revision exterior"
+                    : esIngreso
+                      ? "Ingreso"
+                      : "Salida"
+              }
               tone={esIngreso ? "success" : "danger"}
             />
           </View>

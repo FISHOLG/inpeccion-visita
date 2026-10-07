@@ -9,6 +9,7 @@ export interface DataVehiVisita {
   COD_MOD_UND: string;
   FECHA_INGRESO: string;
   MODELO: string;
+  ESTADO_INSP_ING?: string | null;
 }
 
 export interface VehiVisitaResponse {
